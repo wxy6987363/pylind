@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Pylind · 极简 Python 解释器</title>
+  <style>
+    /* 重置 & 极简基调 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f5f8f5;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: #1a2e1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 1000px;
+      width: 100%;
+      padding: 2rem 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f5f8f5;
+    }
+
+    /* 头部 */
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid #c8dec8;
+      margin-bottom: 1.8rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      font-size: 1.6rem;
+      font-weight: 650;
+      letter-spacing: -0.5px;
+      color: #0a2e0a;
+    }
+
+    .logo small {
+      font-size: 0.9rem;
+      font-weight: 350;
+      color: #3d6b3d;
+      margin-left: 0.2rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .btn-download {
+      background: #1f4a1f;
+      color: white;
+      border: none;
+      padding: 0.4rem 1.4rem;
+      font-weight: 550;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-download:hover {
+      background: #0f2e0f;
+    }
+
+    /* 主体 */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+      gap: 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero-text {
+      max-width: 600px;
+    }
+
+    .hero-text h1 {
+      font-size: 2.1rem;
+      font-weight: 650;
+      letter-spacing: -0.3px;
+      color: #0a2e0a;
+      line-height: 1.2;
+    }
+
+    .hero-text p {
+      font-size: 0.95rem;
+      color: #2a4a2a;
+      margin-top: 0.5rem;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+
+    .badge-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem 1rem;
+      margin: 0.2rem 0 0.2rem;
+    }
+
+    .badge {
+      background: white;
+      padding: 0.15rem 1rem;
+      border: 1px solid #bcd8bc;
+      font-size: 0.75rem;
+      font-weight: 480;
+      letter-spacing: 0.2px;
+      color: #1f3f1f;
+      border-radius: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge span {
+      font-weight: 600;
+      color: #0f2e0f;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.3rem 0.6rem;
+      width: 100%;
+      max-width: 520px;
+      margin: 0.4rem 0 1.2rem;
+    }
+
+    .feature-item {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 0.25rem 0.2rem;
+      font-weight: 450;
+      font-size: 0.8rem;
+      color: #173017;
+      border-bottom: 1px dashed #c8dec8;
+    }
+
+    /* ===== 专业轮播引擎 ===== */
+    .carousel-section {
+      width: 100%;
+      max-width: 780px;
+      margin: 0.2rem 0 1.4rem;
+      overflow: visible;
+    }
+
+    .carousel-title {
+      font-weight: 550;
+      font-size: 0.9rem;
+      letter-spacing: 0.2px;
+      color: #0a2e0a;
+      border-bottom: 1px solid #c8dec8;
+      padding-bottom: 0.2rem;
+      margin-bottom: 0.8rem;
+      text-align: left;
+    }
+
+    .carousel-wrapper {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      padding: 10px 0;
+      background: #f5f8f5;
+      touch-action: pan-y;
+    }
+
+    .carousel-track {
+      display: flex;
+      align-items: center;
+      will-change: transform;
+      transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+      gap: 0px;
+    }
+
+    .carousel-slide {
+      flex: 0 0 33.333%;
+      padding: 0 6px;
+      transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                  opacity 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+      transform: scale(0.8);
+      opacity: 0.5;
+      aspect-ratio: 9 / 16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      will-change: transform, opacity;
+    }
+
+    .carousel-slide.active {
+      transform: scale(1);
+      opacity: 1;
+      z-index: 2;
+    }
+
+    .carousel-slide.prev,
+    .carousel-slide.next {
+      transform: scale(0.85);
+      opacity: 0.8;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #c6dec6;
+      border: 2px solid #bcd8bc;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      border-radius: 4px;
+    }
+
+    .carousel-slide.active img {
+      border-color: #1f4a1f;
+      box-shadow: 0 8px 24px rgba(0, 30, 0, 0.18);
+    }
+
+    .carousel-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .carousel-btn {
+      background: #1f4a1f;
+      color: white;
+      border: none;
+      padding: 0.1rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      border-radius: 0;
+      min-width: 44px;
+      line-height: 2;
+    }
+
+    .carousel-btn:hover {
+      background: #0f2e0f;
+      transform: scale(1.02);
+    }
+    .carousel-btn:active {
+      transform: scale(0.96);
+    }
+
+    .carousel-indicators {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #bcd8bc;
+      border: 1px solid #8fb88f;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      border-radius: 0;
+    }
+
+    .dot.active {
+      background: #1f4a1f;
+      border-color: #1f4a1f;
+      transform: scale(1.15);
+    }
+
+    /* 视频区块 */
+    .video-section {
+      width: 100%;
+      max-width: 680px;
+      margin: 0.6rem 0 0.6rem;
+      border-top: 1px solid #c8dec8;
+      padding-top: 1.2rem;
+    }
+
+    .video-section h3 {
+      font-weight: 550;
+      font-size: 0.9rem;
+      letter-spacing: 0.2px;
+      color: #0a2e0a;
+      border-bottom: 1px solid #c8dec8;
+      padding-bottom: 0.2rem;
+      margin-bottom: 0.6rem;
+      text-align: left;
+    }
+
+    .video-wrapper {
+      background: #0f1f0f;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      border: 1px solid #8fb88f;
+      border-radius: 4px;
+    }
+
+    .video-wrapper video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      background: #0f1f0f;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      border-top: 1px solid #c8dec8;
+      padding-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      color: #2a5a2a;
+      font-size: 0.75rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-links a {
+      color: #1f4a1f;
+      text-decoration: none;
+      font-weight: 450;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .app { padding: 1rem; }
+      .header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+      .header-actions { justify-content: center; }
+      .hero-text h1 { font-size: 1.7rem; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+      .carousel-slide {
+        flex: 0 0 33.333%;
+        padding: 0 4px;
+        transform: scale(0.75);
+      }
+      .carousel-slide.active {
+        transform: scale(0.95);
+      }
+      .carousel-slide.prev,
+      .carousel-slide.next {
+        transform: scale(0.8);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-text h1 { font-size: 1.4rem; }
+      .badge-group { gap: 0.3rem; }
+      .carousel-slide {
+        flex: 0 0 33.333%;
+        padding: 0 3px;
+        transform: scale(0.7);
+      }
+      .carousel-slide.active {
+        transform: scale(0.9);
+      }
+      .carousel-slide.prev,
+      .carousel-slide.next {
+        transform: scale(0.75);
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 头部 -->
+  <header class="header">
+    <div class="logo">
+      Pylind
+    </div>
+    <div class="header-actions">
+      <a href="res/pylind.apk" class="btn-download" download>下载 APK</a>
+    </div>
+  </header>
+
+  <!-- Hero 主区域 -->
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Pylind</h1>
+      <p>
+        内置 CPython 3.14 以及 PyPI 仓库，支持 pip 安装依赖。代码编辑器自带语法高亮，集成终端交互，
+        移动端开发学习更专注。
+      </p>
+    </div>
+
+    <div class="badge-group">
+      <span class="badge"><span>3.14</span> Python</span>
+      <span class="badge"><span>PyPI</span> 仓库</span>
+      <span class="badge"><span>venv</span> 轻量</span>
+      <span class="badge"><span>高亮</span> 编辑</span>
+      <span class="badge"><span>终端</span> 交互</span>
+    </div>
+  </section>
+
+  <div class="feature-grid">
+    <div class="feature-item">即时执行</div>
+    <div class="feature-item">文件管理</div>
+    <div class="feature-item">代码补全</div>
+    <div class="feature-item">内存监控</div>
+  </div>
+
+  <!-- ===== 专业轮播引擎：两圈无缝拼接 ===== -->
+  <div class="carousel-section">
+    <div class="carousel-title">界面预览 · 滚动轮播</div>
+    <div class="carousel-wrapper" id="carouselWrapper">
+      <div class="carousel-track" id="carouselTrack">
+        <!-- 两圈图片：1.jpg ~ 5.jpg 重复两次，共10项 -->
+        <div class="carousel-slide"><img src="res/img/1.jpg" alt="截图1" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/2.jpg" alt="截图2" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/3.jpg" alt="截图3" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/4.jpg" alt="截图4" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/5.jpg" alt="截图5" loading="eager"></div>
+        <!-- 第二圈 -->
+        <div class="carousel-slide"><img src="res/img/1.jpg" alt="截图1" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/2.jpg" alt="截图2" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/3.jpg" alt="截图3" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/4.jpg" alt="截图4" loading="eager"></div>
+        <div class="carousel-slide"><img src="res/img/5.jpg" alt="截图5" loading="eager"></div>
+      </div>
+    </div>
+    <div class="carousel-controls">
+      <button class="carousel-btn" id="prevBtn">◀</button>
+      <div class="carousel-indicators" id="indicators"></div>
+      <button class="carousel-btn" id="nextBtn">▶</button>
+    </div>
+  </div>
+
+  <!-- 视频展示 -->
+  <div class="video-section">
+    <h3>功能预览</h3>
+    <div class="video-wrapper">
+      <video controls playsinline preload="metadata" poster="res/img/1.jpg">
+        <source src="res/img/example.mp4" type="video/mp4">
+        您的浏览器不支持 video 标签。
+      </video>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div>© 2026 Pylind · v1.1.0</div>
+    <div class="footer-links">
+      <a href="#">隐私</a>
+      <a href="#">支持</a>
+      <a href="#" id="versionInfo">关于</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  (function() {
+    'use strict';
+
+    // ============================================================
+    //  专业轮播引擎 - 无缝无限滚动 (两圈拼接)
+    //  核心：视觉焦点始终居中，边界跳转零感知
+    // ============================================================
+
+    const track = document.getElementById('carouselTrack');
+    const slides = track.querySelectorAll('.carousel-slide');
+    const total = slides.length;          // 10 (两圈)
+    const slidesPerView = 3;              // 每次展示3个
+    let currentIndex = 0;                 // 当前居中索引 0~9
+    let intervalId = null;
+    let isAnimating = false;
+    let isDragging = false;
+    let startX = 0;
+    let currentTranslateX = 0;
+
+    // ---- 指示器 (5个点) ----
+    const indicatorsContainer = document.getElementById('indicators');
+    function buildIndicators() {
+      indicatorsContainer.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'dot' + (i === 0 ? ' active' : '');
+        dot.dataset.index = i;
+        dot.addEventListener('click', function() {
+          const target = parseInt(this.dataset.index);
+          // 跳转到最近的对应图片 (第一圈或第二圈)
+          const pos1 = target;
+          const pos2 = target + 5;
+          const dist1 = Math.abs(currentIndex - pos1);
+          const dist2 = Math.abs(currentIndex - pos2);
+          const gotoIdx = dist1 <= dist2 ? pos1 : pos2;
+          goTo(gotoIdx, true);
+          resetInterval();
+        });
+        indicatorsContainer.appendChild(dot);
+      }
+    }
+    buildIndicators();
+    const dots = () => indicatorsContainer.querySelectorAll('.dot');
+
+    function updateIndicators() {
+      const picIndex = currentIndex % 5;
+      dots().forEach((dot, i) => {
+        dot.classList.toggle('active', i === picIndex);
+      });
+    }
+
+    // ---- 核心更新函数 ----
+    function updateSlides(animate = true) {
+      // 切换过渡
+      if (!animate) {
+        track.style.transition = 'none';
+      } else {
+        track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
+      }
+
+      // 计算偏移：让 currentIndex 居中 (每个slide 33.333%)
+      const offset = -(currentIndex - 1) * (100 / slidesPerView);
+      track.style.transform = 'translateX(' + offset + '%)';
+
+      // 更新每个 slide 的缩放 & 透明度 & class
+      slides.forEach((slide, idx) => {
+        const distance = Math.abs(idx - currentIndex);
+        let scale, opacity;
+        if (distance === 0) {
+          scale = 1;
+          opacity = 1;
+        } else if (distance === 1) {
+          scale = 0.85;
+          opacity = 0.8;
+        } else {
+          scale = 0.7;
+          opacity = 0.4;
+        }
+        slide.style.transform = 'scale(' + scale + ')';
+        slide.style.opacity = opacity;
+        slide.classList.remove('active', 'prev', 'next');
+        if (distance === 0) slide.classList.add('active');
+        else if (distance === 1) {
+          if (idx < currentIndex) slide.classList.add('prev');
+          else slide.classList.add('next');
+        }
+      });
+
+      updateIndicators();
+
+      // 恢复过渡 (如果被关闭)
+      if (!animate) {
+        // 强制回流后恢复过渡
+        void track.offsetHeight;
+        track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
+      }
+    }
+
+    // ---- 无缝跳转 (零感知边界修正) ----
+    function seamlessFix(prevIndex, newIndex) {
+      // 如果从索引1 跳到 0 (向左越界) → 修正到 5 (第二圈对应)
+      // 如果从索引8 跳到 9 (向右越界) → 修正到 4 (第一圈对应)
+      let fixIndex = null;
+      if (newIndex === 0 && prevIndex === 1) {
+        fixIndex = 5;
+      } else if (newIndex === total - 1 && prevIndex === total - 2) {
+        fixIndex = 4;
+      }
+
+      if (fixIndex !== null) {
+        currentIndex = fixIndex;
+        // 无动画跳转
+        track.style.transition = 'none';
+        const offset = -(currentIndex - 1) * (100 / slidesPerView);
+        track.style.transform = 'translateX(' + offset + '%)';
+        // 更新视觉
+        slides.forEach((slide, idx) => {
+          const distance = Math.abs(idx - currentIndex);
+          let scale, opacity;
+          if (distance === 0) { scale = 1; opacity = 1; }
+          else if (distance === 1) { scale = 0.85; opacity = 0.8; }
+          else { scale = 0.7; opacity = 0.4; }
+          slide.style.transform = 'scale(' + scale + ')';
+          slide.style.opacity = opacity;
+          slide.classList.remove('active', 'prev', 'next');
+          if (distance === 0) slide.classList.add('active');
+          else if (distance === 1) {
+            if (idx < currentIndex) slide.classList.add('prev');
+            else slide.classList.add('next');
+          }
+        });
+        updateIndicators();
+        void track.offsetHeight;
+        track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
+      }
+    }
+
+    // ---- 导航 ----
+    function goTo(index, animate = true) {
+      if (isAnimating) return;
+      if (index < 0) index = total - 1;
+      if (index >= total) index = 0;
+
+      const prev = currentIndex;
+      currentIndex = index;
+      updateSlides(animate);
+
+      // 如果动画开启，在动画结束后执行无缝修正
+      if (animate) {
+        isAnimating = true;
+        setTimeout(() => {
+          isAnimating = false;
+          seamlessFix(prev, currentIndex);
+        }, 620); // 略大于过渡时间
+      } else {
+        // 无动画直接修正
+        seamlessFix(prev, currentIndex);
+      }
+    }
+
+    function nextSlide() {
+      if (isAnimating) return;
+      const next = (currentIndex + 1) % total;
+      goTo(next, true);
+    }
+
+    function prevSlide() {
+      if (isAnimating) return;
+      const prev = (currentIndex - 1 + total) % total;
+      goTo(prev, true);
+    }
+
+    // ---- 事件绑定 ----
+    document.getElementById('nextBtn').addEventListener('click', function() {
+      nextSlide();
+      resetInterval();
+    });
+    document.getElementById('prevBtn').addEventListener('click', function() {
+      prevSlide();
+      resetInterval();
+    });
+
+    // ---- 自动播放 ----
+    function startInterval() {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(nextSlide, 4200);
+    }
+    function resetInterval() {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      startInterval();
+    }
+    startInterval();
+
+    // ---- 鼠标悬停暂停 ----
+    const wrapper = document.querySelector('.carousel-wrapper');
+    wrapper.addEventListener('mouseenter', function() {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    });
+    wrapper.addEventListener('mouseleave', function() {
+      if (!intervalId) startInterval();
+    });
+
+    // ---- 触摸滑动 (增强) ----
+    wrapper.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      // 可增加实时跟随效果，此处简化
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', function(e) {
+      if (!isDragging) return;
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 35) {
+        diff > 0 ? nextSlide() : prevSlide();
+        resetInterval();
+      }
+      isDragging = false;
+    }, { passive: true });
+
+    // ---- 键盘辅助（可访问性） ----
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft') { prevSlide(); resetInterval(); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { nextSlide(); resetInterval(); e.preventDefault(); }
+    });
+
+    // ---- 关于信息 ----
+    document.getElementById('versionInfo').addEventListener('click', function(e) {
+      e.preventDefault();
+      alert('Pylind 版本 1.1.0\n基于 Python 3.14.0\n内置 PyPI 镜像 (清华源)\n更新日期: 2026.08');
+    });
+
+    document.querySelector('.logo').addEventListener('dblclick', function() {
+      alert('Pylind 功能清单\n\n- 交互式终端\n- 语法高亮编辑器\n- pip 包管理\n- 轻量虚拟环境 (venv)\n- 文件浏览器\n- 内存监控');
+    });
+
+    // ---- 初始化 ----
+    currentIndex = 0;
+    updateSlides(true);
+    // 首次加载后立即修正位置（防止边界空白）
+    setTimeout(() => {
+      // 强制修正到第一圈第一张，但保留无缝
+      if (currentIndex === 0) {
+        // 不需要额外操作，已经正确
+      }
+    }, 100);
+
+  })();
+</script>
+</body>
+</html>
