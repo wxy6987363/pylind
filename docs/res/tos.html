@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Pylind 用户协议</title>
+    <style>
+        /* 全局重置 & 黑白极简风格 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #ffffff;
+            color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 20px 16px 40px;
+            max-width: 680px;
+            margin: 0 auto;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 只保留文字大小变化，无其他样式干扰 */
+        h1, h2, h3, h4, p, ul, ol, li, blockquote, div, section, article {
+            all: unset;
+            display: block;
+        }
+
+        /* 标题层级 — 仅通过字号和粗细区分 */
+        .title-main {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        .title-sub {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 28px;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .title-section {
+            font-size: 19px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .title-item {
+            font-size: 17px;
+            font-weight: 600;
+            margin-top: 18px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .title-subitem {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 14px;
+            margin-bottom: 2px;
+        }
+
+        /* 正文段落 */
+        .text-body {
+            font-size: 16px;
+            font-weight: 400;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            line-height: 1.7;
+        }
+
+        .text-small {
+            font-size: 14px;
+            font-weight: 400;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            line-height: 1.6;
+            color: #1a1a1a;
+        }
+
+        .text-meta {
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            color: #222;
+        }
+
+        /* 列表风格：仅保留黑点或数字，无额外装饰 */
+        .list-ordered {
+            padding-left: 22px;
+            margin-top: 6px;
+            margin-bottom: 10px;
+        }
+
+        .list-ordered li {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.7;
+            margin-bottom: 4px;
+            display: list-item;
+            list-style-type: decimal;
+        }
+
+        .list-unordered {
+            padding-left: 22px;
+            margin-top: 6px;
+            margin-bottom: 10px;
+        }
+
+        .list-unordered li {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.7;
+            margin-bottom: 4px;
+            display: list-item;
+            list-style-type: disc;
+        }
+
+        .list-unordered.sub {
+            padding-left: 28px;
+        }
+        .list-unordered.sub li {
+            list-style-type: circle;
+        }
+
+        .list-unordered.alpha {
+            padding-left: 28px;
+        }
+        .list-unordered.alpha li {
+            list-style-type: lower-alpha;
+        }
+
+        /* 内联强调 (仅加粗) */
+        strong, b {
+            font-weight: 700;
+        }
+
+        /* 分割线 — 极细黑线 */
+        .hr-light {
+            width: 100%;
+            height: 1px;
+            background: #000;
+            margin: 28px 0 20px;
+            opacity: 0.25;
+        }
+
+        .hr-strong {
+            width: 100%;
+            height: 2px;
+            background: #000;
+            margin: 32px 0 22px;
+            opacity: 0.4;
+        }
+
+        /* 块引用 — 仅左边缘黑线 */
+        .block-quote {
+            padding-left: 16px;
+            border-left: 3px solid #000;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        /* 特殊标注：如日期、版本等 */
+        .meta-line {
+            font-size: 14px;
+            font-weight: 400;
+            margin-top: 2px;
+            margin-bottom: 6px;
+            color: #111;
+        }
+
+        /* 底部联系方式 */
+        .contact-line {
+            font-size: 15px;
+            font-weight: 400;
+            margin-top: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* 移动端微调 */
+        @media (max-width: 480px) {
+            body {
+                padding: 16px 14px 36px;
+                font-size: 15px;
+            }
+            .title-main {
+                font-size: 26px;
+            }
+            .title-sub {
+                font-size: 20px;
+            }
+            .title-section {
+                font-size: 18px;
+            }
+            .text-body {
+                font-size: 15px;
+            }
+            .list-ordered li, .list-unordered li {
+                font-size: 15px;
+            }
+        }
+
+        /* 防止内容溢出 */
+        .word-break {
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <!-- 主标题 -->
+    <h1 class="title-main">Pylind User Agreement</h1>
+    <div class="meta-line"><strong>Last Updated:</strong> August 26, 2026</div>
+    <div class="meta-line"><strong>Effective Date:</strong> August 26, 2026</div>
+
+    <!-- 分割线 -->
+    <div class="hr-light"></div>
+
+    <!-- Definitions -->
+    <h2 class="title-sub">Definitions</h2>
+    <p class="text-body">In this Agreement, the following terms have the meanings set forth below. These definitions apply to all provisions of this Agreement. The singular includes the plural and vice versa.</p>
+
+    <h3 class="title-section">Time and Periods</h3>
+    <p class="text-body"><strong>1. "Date":</strong> All dates mentioned in this Agreement (including but not limited to "Last Updated" and "Effective Date") are based on <strong>Beijing Time (UTC+8)</strong> and follow the <strong>Gregorian calendar</strong>.</p>
+    <p class="text-body"><strong>2. "Calendar Day":</strong> A continuous 24‑hour period from 00:00:00 of one day to 00:00:00 of the next day, including every day in the Gregorian calendar (including statutory holidays, Saturdays, and Sundays). "7 Calendar Days" means a continuous period of 7 × 24 hours.</p>
+    <p class="text-body"><strong>3. "Calendar Month":</strong> The period from 00:00:00 of the first day of a Gregorian calendar month to 00:00:00 of the first day of the following month. "1 Calendar Month" means from January 1 to February 1. The number of days in each Calendar Month is based on the actual days of the Gregorian calendar (31 days in January, 28 or 29 days in February, 31 days in March, etc.).</p>
+    <p class="text-body"><strong>4. "Business Day":</strong> A calendar date that is not a Chinese statutory holiday, Saturday, or Sunday. If a deadline falls on a non‑Business Day, it extends to the next Business Day. Chinese statutory holidays are determined by the annual holiday schedule published by the State Council of China.</p>
+    <p class="text-body"><strong>5. "Day":</strong> Unless explicitly stated as "Business Day," all references to "Day" in this Agreement mean <strong>Calendar Day</strong>.</p>
+    <p class="text-body"><strong>6. "Immediately":</strong> Within the shortest time reasonably practicable, not exceeding 24 hours.</p>
+
+    <h3 class="title-section">Software and Platforms</h3>
+    <p class="text-body"><strong>7. "Application", "Pylind", or "Program":</strong> The Pylind mobile application developed and published by the Developer (currently the Android version), including all binary code, built‑in modules, user interface, resource files, database structures, API definitions, configuration templates, icons, fonts, audio and visual resources, and all subsequent Updates and Upgrades (including patches, hotfixes, major version updates, security updates, and feature updates). The Application is built entirely using HTML, CSS, and JavaScript, and contains no .so (shared library) files or other native binary dependencies.</p>
+    <p class="text-body"><strong>8. "Version":</strong> A specific software release of the Application with an independent version number (e.g., v1.0, v1.1, v2.0).</p>
+    <p class="text-body"><strong>9. "Update":</strong> Any modification, enhancement, fix, or replacement made by the Developer to the Application, including:</p>
+    <ul class="list-unordered">
+        <li><strong>Patch:</strong> A minimal fix for a specific issue (security vulnerabilities or functional defects);</li>
+        <li><strong>Minor Update:</strong> An incremental update under the same major version number, including feature enhancements and bug fixes;</li>
+        <li><strong>Major Update:</strong> A significant feature update or architectural adjustment with a change in the major version number, which may contain backward‑incompatible changes.</li>
+    </ul>
+    <p class="text-body"><strong>10. "Upgrade":</strong> The User's transition from an old Version of the Application to a new Version.</p>
+    <p class="text-body"><strong>11. "Platform" or "Operating System":</strong> The underlying software environment on which the Application runs. The Application's Platform is the <strong>Android Operating System</strong>. The Developer may release versions for other platforms (iOS, HarmonyOS, Windows, etc.).</p>
+    <p class="text-body"><strong>12. "Device" or "Mobile Device":</strong> The hardware terminal used by the User to install and run the Application, including smartphones and tablet computers. The Device must run the Android Operating System and meet the Application's minimum system requirements.</p>
+    <p class="text-body"><strong>13. "Official Channels":</strong> The legal channels explicitly designated by the Developer for obtaining legitimate copies of the Application, including the Developer's official website, the official release page on GitHub repositories, Google Play Store, Tencent App Store, Huawei App Gallery, and other distribution platforms authorized by the Developer. <strong>"Unofficial Channels"</strong> means any channels other than the above.</p>
+
+    <h3 class="title-section">Parties</h3>
+    <p class="text-body"><strong>14. "Developer", "we", or "us":</strong> The developer of the Pylind Application and its legal successors in rights and obligations (including assignees, licensees, surviving entities after mergers, and inheriting entities after divisions). Contact email: wxy6987@outlook.com.</p>
+    <p class="text-body"><strong>15. "User", "you", or "user":</strong> Any natural person, legal person, or other organization that downloads, installs, registers, or uses the Application through legal means. <strong>If the User is a person without civil capacity or with limited civil capacity (such as a minor under the age of 18), they shall use the Application only after their legal guardian has read, understood, and agreed to this Agreement. The legal guardian bears full legal responsibility for the minor's use.</strong></p>
+    <p class="text-body"><strong>16. "Third Party":</strong> Any natural person, legal person, or other organization other than the Developer and the User.</p>
+    <p class="text-body"><strong>17. "Contributor":</strong> Any natural person, legal person, or other organization that submits code, documentation, reports, or other intellectual achievements to the Application, and whose submissions are accepted by the Developer.</p>
+
+    <h3 class="title-section">Licensing and Legal Concepts</h3>
+    <p class="text-body"><strong>18. "License" or "Authorization":</strong> The qualification granted by the Developer to the User, subject to the User's compliance with all terms of this Agreement, to exercise the specific rights set forth in this Agreement (use, reproduction, modification, and distribution). This License is non‑exclusive and non‑transferable.</p>
+    <p class="text-body"><strong>19. "Intellectual Property Rights":</strong> All statutory or contractual intellectual property rights, including:</p>
+    <ul class="list-unordered">
+        <li>Copyright and related rights under the Copyright Law of the People's Republic of China;</li>
+        <li>Invention, utility model, and design patent rights and patent applications under the Patent Law of the People's Republic of China;</li>
+        <li>Trademark rights and trademark applications under the Trademark Law of the People's Republic of China;</li>
+        <li>Trade secret rights;</li>
+        <li>Domain name rights, sui generis database rights, and other intellectual property rights protected by law.</li>
+    </ul>
+    <p class="text-body"><strong>20. "Trade Secrets":</strong> Technical and business information not known to the public, having commercial value, and subject to reasonable confidentiality measures. The Application's Trade Secrets include: unpublished core algorithm implementations, unpublished API specification drafts, performance optimization techniques, security mechanism internal logic, and user data analysis models.</p>
+    <p class="text-body"><strong>21. "Patent":</strong> Invention patents, utility model patents, and design patents granted under the Patent Law of the People's Republic of China and corresponding international treaties, as well as corresponding patent applications.</p>
+    <p class="text-body"><strong>22. "Trademark":</strong> The Application's name "Pylind," Logo, graphic identifiers, and other marks distinguishing the Application from other software products, whether registered or not.</p>
+    <p class="text-body"><strong>23. "Laws" or "Laws and Regulations":</strong> Laws enacted by the National People's Congress of the People's Republic of China and its Standing Committee, administrative regulations enacted by the State Council, local regulations, departmental rules, local government rules, mandatory national standards, and other legally binding normative documents. <strong>This refers only to the legal system of the People's Republic of China</strong>, and excludes foreign laws, international treaties, and international practices.</p>
+    <p class="text-body"><strong>24. "Confidential Information" or "Non‑public Information":</strong> Information related to the Application's development, operation, user data, business model, or technology roadmap that has not been disclosed to the public by the Developer, whether technical or commercial, in any form.</p>
+    <p class="text-body"><strong>25. "Distribution":</strong> Providing copies of the Application (or a portion of the Application, or Derivative Works based on the Application) to any Third Party, including:</p>
+    <ul class="list-unordered">
+        <li>Transmission via physical media;</li>
+        <li>Transmission via network download (app store distribution, website downloads);</li>
+        <li>Transmission across internal departments or institutions within an enterprise;</li>
+        <li>Remote provision of the Application's functionality as SaaS or cloud services;</li>
+        <li>Making the Application available to Third Parties through any other means.</li>
+    </ul>
+    <p class="text-body"><strong>26. "Commercial Use":</strong> Direct or indirect use of the Application for profit‑making activities, including:</p>
+    <ul class="list-unordered">
+        <li>Integrating it into paid software or services;</li>
+        <li>Providing paid technical support, training, consulting, or custom development services;</li>
+        <li>Using it as an internal business tool within an enterprise (even if not directly charged);</li>
+        <li>Obtaining revenue through advertising, sponsorship, etc.;</li>
+        <li>Developing commercial products based on the Application.</li>
+    </ul>
+
+    <h3 class="title-section">Technology and Permissions</h3>
+    <p class="text-body"><strong>27. "System Permissions":</strong> Capabilities granted by the Device Operating System to the Application to access Device hardware resources or specific data. The Application requests SMS permissions, camera permissions, network permissions, and install‑apps permission, as detailed in Article 3.</p>
+    <p class="text-body"><strong>28. "CPython":</strong> The official reference implementation of the Python programming language maintained by the Python Software Foundation (the C language implementation), embedded in the Application to execute Python scripts. CPython is governed by the Python Software Foundation License Agreement.</p>
+    <p class="text-body"><strong>29. "Third‑Party Libraries" or "External Modules":</strong> Python code libraries or software modules not built into the Application but imported or invoked by the User through the Application. Third‑Party Libraries are governed by their own license terms. This Agreement does not apply to Third‑Party Libraries.</p>
+    <p class="text-body"><strong>30. "Reverse Engineering":</strong> Obtaining Source Code, data structures, logical processes, or design concepts by decompiling, disassembling, unpacking, debugging, tracing, analyzing, or otherwise examining the Application's binary code or installation packages. Because the Application is built entirely using HTML, CSS, and JavaScript, Reverse Engineering through standard web debugging tools (browser developer tools) is expressly permitted by this Agreement.</p>
+    <p class="text-body"><strong>31. "Competitive Product":</strong> Any software product, service, or solution that provides a CPython (or other Python implementation) interpreter environment and the capabilities of writing, running, debugging, and managing Python scripts on mobile devices. Characteristics of a Competitive Product include:</p>
+    <ul class="list-unordered">
+        <li>Targeting substantially the same user group;</li>
+        <li>Satisfying the same or highly similar user needs;</li>
+        <li>Substantial correspondence with the Application in features, interaction flows, or user experience;</li>
+        <li>Any distribution form (mobile application, web service, desktop software, embedded system, command‑line tool, or cloud service).</li>
+    </ul>
+    <p class="text-body"><strong>32. "Derivative Work":</strong> Any work created based on the Application through modification, adaptation, translation, restructuring, or refactoring, consistent with the "adaptation right" under the Copyright Law of the People's Republic of China. Mere aggregation of the Application with other works does not constitute a Derivative Work. Python scripts written and executed solely through the Application do not constitute Derivative Works, but if such scripts contain copies or modifications of the Application's built‑in module Source Code, the corresponding portions constitute Derivative Works.</p>
+    <p class="text-body"><strong>33. "Source Code":</strong> Human‑readable, uncompiled software program code, including:</p>
+    <ul class="list-unordered">
+        <li>The Application's original programming language code (HTML, CSS, JavaScript);</li>
+        <li>Comments and documentation strings;</li>
+        <li>Declaration files (AndroidManifest.xml);</li>
+        <li>Build scripts (Gradle files);</li>
+        <li>Resource description files.</li>
+    </ul>
+    <p class="text-body"><strong>34. "Object Code" or "Binary":</strong> Code generated after compilation, assembly, or linking of Source Code, directly executable or further processable by a computer. Because the Application is built entirely using Web technologies, its Object Code is minified and obfuscated JavaScript, CSS, and HTML files, and contains no .so (shared library) files.</p>
+    <p class="text-body"><strong>35. "WeChat Share SDK":</strong> The third‑party software development kit provided by Tencent WeChat for sharing content to WeChat, including sharing text, images, links, and other content to WeChat Moments and WeChat Friends. The WeChat Share SDK is governed by its own terms of service.</p>
+
+    <h3 class="title-section">Legal Effect</h3>
+    <p class="text-body"><strong>36. "Standard Terms":</strong> Terms pre‑drafted by the Developer for repeated use and not negotiated with the User. The User acknowledges that all terms in this Agreement are Standard Terms and voluntarily agrees to be bound by them. Terms exempting or limiting the Developer's liability are <strong>in bold</strong>.</p>
+    <p class="text-body"><strong>37. "Notice":</strong> Any act by the Developer to convey information to the User, including:</p>
+    <ul class="list-unordered">
+        <li>In‑app pop‑ups or banner prompts;</li>
+        <li>Explanations in the Application's update logs;</li>
+        <li>Announcements on the official website;</li>
+        <li>Emails to the User's contact address.</li>
+    </ul>
+    <p class="text-body">A Notice is deemed delivered upon issuance by the Developer. The User must proactively check in‑app prompts and Notices from Official Channels.</p>
+
+    <div class="hr-light"></div>
+
+    <!-- 引言段落 -->
+    <p class="text-body"><strong>Welcome to the Pylind Application.</strong> The Application is a completely open‑source tool‑type software built on the CPython interpreter, supporting Python programming and module extensions, providing Python developers with a programming and debugging environment on mobile devices. The Application is built entirely using HTML, CSS, and JavaScript.</p>
+    <p class="text-body"><strong>Read this Agreement carefully and fully understand all its terms, especially those relating to the disclaimer of warranties and limitation of liability.</strong> By downloading, installing, registering, or otherwise using the Application, you agree to be bound by this Agreement.</p>
+
+    <div class="hr-strong"></div>
+
+    <!-- Article 1 -->
+    <h2 class="title-sub">Article 1: Copyright and Open Source License</h2>
+    <h3 class="title-section">1.1 Copyright Ownership and Intellectual Property Declaration</h3>
+    <p class="text-body">The copyright, patent rights, trademark rights, and other Intellectual Property Rights in the Application's Source Code, Object Code, built‑in modules, user interface design, interaction logic, interface layout, icons, textual content, audio resources, documentation, database structures, API definitions, and related technical documentation belong to the Developer (except for Third‑Party contributed content). The Application is protected by the Copyright Law of the People's Republic of China, the Patent Law of the People's Republic of China, the Trademark Law of the People's Republic of China, the Regulations on the Protection of Computer Software, and international copyright treaties.</p>
+    <p class="text-body">The name "Pylind," Logo, and identifiers are trademarks of the Developer (whether registered or not). Without the Developer's prior written permission, the User shall not use these trademarks in promotional materials, product names, service marks, or domain names, nor apply for registration of identical or similar trademarks or domain names.</p>
+    <p class="text-body">The Application contains no .so (shared library) files, .dll files, or other native binary dependencies. All functionality is implemented through HTML, CSS, and JavaScript.</p>
+
+    <h3 class="title-section">1.2 Pylind Open Source License</h3>
+    <p class="text-body">The Application is <strong>completely open source</strong> and made available under the <strong>Pylind Open Source License</strong> set forth below. By using, reproducing, modifying, or distributing the Application (or any Derivative Work), you accept and agree to be bound by this License.</p>
+    <p class="text-body"><strong>Pylind Open Source License</strong></p>
+
+    <p class="text-body"><strong>1.2.1 Grant of Rights</strong></p>
+    <p class="text-body">The Developer grants you a worldwide, royalty‑free, non‑exclusive, perpetual (for the duration of the applicable copyright) license, subject to the terms of this License, to:</p>
+    <ul class="list-unordered alpha">
+        <li><strong>(a) Use:</strong> Use the Application for any purpose, including Commercial Use;</li>
+        <li><strong>(b) Reproduce:</strong> Reproduce the Application in whole or in part;</li>
+        <li><strong>(c) Modify:</strong> Modify the Application and create Derivative Works;</li>
+        <li><strong>(d) Distribute:</strong> Distribute copies of the Application (including Derivative Works) in Source Code or Object Code form, subject to Article 1.3 (Conditions of Distribution);</li>
+        <li><strong>(e) Sublicense:</strong> Sublicense the foregoing rights to Third Parties, provided that such sublicense includes all terms of this License and binds such Third Parties.</li>
+    </ul>
+
+    <p class="text-body"><strong>1.2.2 Conditions of Distribution</strong></p>
+    <p class="text-body">You may Distribute the Application (or any Derivative Work) only if you:</p>
+    <ul class="list-unordered alpha">
+        <li><strong>(a) Include this License:</strong> Include a complete copy of this Pylind Open Source License with every Distributed copy;</li>
+        <li><strong>(b) Retain Notices:</strong> Retain all copyright, patent, trademark, and attribution notices in the Application's Source Code;</li>
+        <li><strong>(c) Indicate Modifications:</strong> Add a prominent notice in each modified Source Code file indicating the modification, date, and summary of changes;</li>
+        <li><strong>(d) Provide Source Code:</strong> If you Distribute in Object Code form, provide the corresponding Source Code or a clear offer to provide it at no additional charge, valid for at least 12 months from Distribution;</li>
+        <li><strong>(e) Bind Recipients:</strong> Include a statement that all recipients are bound by this License.</li>
+    </ul>
+
+    <p class="text-body"><strong>1.2.3 Patent Grant</strong></p>
+    <p class="text-body">Each Contributor grants you a non‑exclusive, royalty‑free patent license under such Contributor's Patent claims necessarily infringed by their contribution to the Application. If you initiate patent litigation against any party alleging that the Application infringes any patent, all patent licenses granted to you under this License terminate automatically.</p>
+
+    <p class="text-body"><strong>1.2.4 Patent Retaliation</strong></p>
+    <p class="text-body">If you file or participate in any patent infringement claim or litigation asserting that the Application infringes your Patent rights, all rights granted to you under this License terminate immediately.</p>
+
+    <p class="text-body"><strong>1.2.5 Full Open Source Declaration</strong></p>
+    <p class="text-body">The Application is <strong>fully open source</strong>. The Developer publishes the complete Source Code of the Application through Official Channels. You have the right to access, view, study, modify, and distribute the complete Source Code, subject to the terms of this License. The Developer encourages community participation, including reporting issues, submitting patches, and contributing new features.</p>
+    <p class="text-body">The open source nature of the Application means:</p>
+    <ul class="list-unordered">
+        <li><strong>Complete Source Code Availability</strong>: The Developer provides the complete Source Code for all Versions of the Application through Official Channels.</li>
+        <li><strong>Transparency</strong>: All code changes, bug fixes, and feature additions are publicly visible in the version control system.</li>
+        <li><strong>Community Contribution</strong>: You may submit contributions to the Application. The Developer reviews and accepts contributions at the Developer's discretion. Accepted contributors are recognized as Contributors.</li>
+        <li><strong>Forking</strong>: You may fork the Application and create independent versions, subject to the conditions of this License.</li>
+        <li><strong>Independent Development</strong>: You may use the Source Code to develop your own products, including Competitive Products, subject to the conditions of this License.</li>
+    </ul>
+
+    <p class="text-body"><strong>1.2.6 Development of Competitive Products Permitted</strong></p>
+    <p class="text-body">The Pylind Open Source License <strong>expressly permits</strong> the development of Competitive Products. You may use the Application's Source Code, design concepts, algorithms, data structures, user interface layout, interaction logic, API specifications, performance optimization methods, and implementation approaches of built‑in modules (whether obtained through Source Code access or Reverse Engineering) to develop, maintain, or operate any Competitive Product. You may also use this information to assist any Third Party in developing Competitive Products. You may invest in, acquire shares in, or participate in any entity that develops Competitive Products.</p>
+
+    <p class="text-body"><strong>1.2.7 Disclaimer of Warranties</strong></p>
+    <div class="block-quote">
+        <p class="text-body">THE APPLICATION IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON‑INFRINGEMENT, AND UNINTERRUPTED OR ERROR‑FREE OPERATION. THE ENTIRE RISK IS WITH YOU.</p>
+    </div>
+
+    <p class="text-body"><strong>1.2.8 Limitation of Liability</strong></p>
+    <div class="block-quote">
+        <p class="text-body">IN NO EVENT SHALL THE DEVELOPER OR ANY CONTRIBUTOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING PROCUREMENT OF SUBSTITUTE GOODS, LOSS OF USE, DATA, PROFITS, OR BUSINESS INTERRUPTION) ARISING OUT OF THE USE OR DISTRIBUTION OF THE APPLICATION, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+    </div>
+
+    <p class="text-body"><strong>1.2.9 Termination</strong></p>
+    <p class="text-body">This License terminates automatically if you fail to comply with any term. Upon termination, you must cease all use and destroy all copies of the Application.</p>
+
+    <h3 class="title-section">1.3 Conditions of Distribution</h3>
+    <p class="text-body">In addition to the conditions in the Pylind Open Source License, when you Distribute the Application (or any Derivative Work), you must:</p>
+    <ul class="list-unordered alpha">
+        <li><strong>(a) Preserve all Notices:</strong> Preserve all copyright, patent, trademark, and attribution notices from the original Application;</li>
+        <li><strong>(b) Not Misrepresent:</strong> Not claim or imply endorsement by the Developer or that your Derivative Work is the original Application;</li>
+        <li><strong>(c) Indemnify:</strong> Indemnify the Developer and its Contributors against all claims, liabilities, damages, and expenses (including reasonable attorneys' fees) arising from your Distribution or Derivative Works.</li>
+    </ul>
+
+    <h3 class="title-section">1.4 Special Permissions</h3>
+    <p class="text-body"><strong>Commercial Use:</strong> The Application permits Commercial Use.</p>
+    <p class="text-body"><strong>Reverse Engineering:</strong> The Application <strong>expressly permits</strong> Reverse Engineering of the Application's binary code, code logic, and built‑in modules. Because the Application is built entirely using HTML, CSS, and JavaScript, Users may view, analyze, and debug the front‑end code through standard web debugging tools (browser developer tools). The Developer <strong>expressly permits</strong> this for any purpose, including learning, research, debugging, and competitive analysis, provided that such acts do not bypass technical protection measures to obtain unauthorized functionality.</p>
+    <p class="text-body"><strong>Development of Competitive Products:</strong> The Application <strong>expressly permits</strong> the development of Competitive Products using the Application's Source Code, design concepts, algorithms, data structures, user interface layout, interaction logic, API specifications, performance optimization methods, and implementation approaches. You may use this information to assist any Third Party in developing Competitive Products.</p>
+    <p class="text-body"><strong>Attribution Requirement:</strong> If you Distribute a Derivative Work or Competitive Product based on the Application, you must include the following attribution notice in a visible location (such as the about page, documentation, or splash screen):</p>
+    <div class="block-quote">
+        <p class="text-body">"This product is based on Pylind (https://github.com/[repository]), an open‑source project licensed under the Pylind Open Source License."</p>
+    </div>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 2 -->
+    <h2 class="title-sub">Article 2: Platform Statement</h2>
+    <p class="text-body">The current Version of the Application is released for the <strong>Android Operating System</strong>. The Developer may release versions for other platforms (iOS, HarmonyOS, Windows, etc.). Different platform Versions have functional differences. The Developer does not guarantee identical functionality across all platforms.</p>
+    <p class="text-body">Users obtain the Application through <strong>Official Channels</strong>. The Developer assumes no responsibility for versions obtained through Unofficial Channels.</p>
+    <p class="text-body">The Application's minimum system requirement for Android Devices is Android 7.0 (API Level 24) or higher. The Developer adjusts these requirements based on technological developments and operational needs.</p>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 3 -->
+    <h2 class="title-sub">Article 3: System Permissions</h2>
+    <p class="text-body">To provide the Application's Core Functionality, Pylind requests the following System Permissions. You refuse to grant permissions, but this affects normal use of some functions.</p>
+
+    <h3 class="title-section">3.1 SMS Permissions (SEND_SMS / RECEIVE_SMS / READ_SMS)</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: Support the built‑in CPython <code>sms</code> extension module, enabling Python scripts to send, receive, and read SMS messages on the Device.</li>
+        <li><strong>User Control</strong>: Not essential for core basic functions. You refuse during installation or first use. Refusal affects only the <code>sms</code> module.</li>
+        <li><strong>Privacy</strong>: These permissions read SMS content, involving personal privacy data.</li>
+        <li><strong>Liability Waiver</strong>: <strong>If you grant these permissions and use the <code>sms</code> module, all charges, privacy leaks, or legal liabilities are solely borne by you. The Developer assumes no responsibility.</strong></li>
+    </ul>
+
+    <h3 class="title-section">3.2 Camera Permission (CAMERA)</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: Support scanning QR codes to quickly download and install Python packages not yet included in the Application's built‑in package repository. By scanning package source URLs or PyPI links, you can conveniently add Third‑Party Libraries to your Python environment.</li>
+        <li><strong>User Control</strong>: Not essential for core basic functions. You refuse during installation or first use. Refusal affects only the QR code scanning package download feature.</li>
+        <li><strong>Privacy</strong>: This permission accesses the Device's camera hardware and captures images of QR codes. The captured content is used solely for parsing package download information. <strong>No images, photos, or video data are stored, uploaded, or shared with any Third Party.</strong></li>
+        <li><strong>Liability Waiver</strong>: <strong>You bear full responsibility for the legality, security, and compatibility of any Python packages downloaded via QR code scanning. The Developer does not audit, verify, or endorse Third‑Party packages. The Developer assumes no responsibility for any damages arising from the use of such packages.</strong></li>
+    </ul>
+
+    <h3 class="title-section">3.3 Network Permissions (INTERNET / ACCESS_NETWORK_STATE)</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: Enable network prompts (version updates, community content) and network request functionality in Python scripts.</li>
+        <li><strong>User Control</strong>: Refusal prevents prompts from displaying and network‑requesting scripts from running.</li>
+        <li><strong>Cost</strong>: Network use generates data traffic charges from your telecommunications carrier.</li>
+    </ul>
+
+    <h3 class="title-section">3.4 Install Apps Permission (REQUEST_INSTALL_PACKAGES)</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: <strong>Reserved</strong> for the Application's future <strong>auto‑update</strong> functionality.</li>
+        <li><strong>User Control</strong>: Currently not enabled. When enabled, the Developer notifies you via pop‑ups or update logs and installs Updates only with your explicit consent.</li>
+        <li><strong>Security</strong>: The Developer pushes digitally signed update packages only through Official Channels.</li>
+    </ul>
+
+    <h3 class="title-section">3.5 WeChat Share SDK</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: The Application integrates the WeChat Share SDK to enable sharing script code snippets, execution results, or application‑related content to WeChat Moments or WeChat Friends.</li>
+        <li><strong>User Control</strong>: Sharing functionality is triggered solely by your explicit action (clicking the share button). The SDK does not automatically share any content.</li>
+        <li><strong>Privacy</strong>: The WeChat Share SDK may collect certain device information as described in Tencent's privacy policy. <strong>Please refer to the WeChat SDK Privacy Policy (https://weixin.qq.com/cgi‑bin/readtemplate?lang=zh_CN&t=weixin_agreement&s=privacy) for details.</strong></li>
+        <li><strong>Third‑Party Terms</strong>: The WeChat Share SDK is provided by Tencent and is governed by its own terms of service and privacy policy. The Developer does not control or assume responsibility for the SDK's operation or data handling practices.</li>
+    </ul>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 4 -->
+    <h2 class="title-sub">Article 4: User Code of Conduct</h2>
+    <p class="text-body">When using Pylind, you comply with the Laws of the People's Republic of China and public order. You do not:</p>
+    <ul class="list-unordered">
+        <li>Use the SMS module to send spam, fraudulent information, phishing links, malicious code, or engage in harassment or extortion;</li>
+        <li>Use the network module to conduct illegal intrusions (port scanning, vulnerability detection, SQL injection, XSS attacks), data theft, DDoS attacks, or distribute malware;</li>
+        <li>Write, distribute, or run script programs violating Laws, including cracking tools, malicious code, or automated attack tools;</li>
+        <li>Infringe others' Intellectual Property Rights, Trade Secrets, or personal rights;</li>
+        <li>Interfere with the Application's normal operation, bypass security mechanisms, or discover or exploit security vulnerabilities;</li>
+        <li>Conduct performance stress testing, automated crawling, or batch requests causing server overload;</li>
+        <li>Impersonate the Developer or official personnel to commit fraud or mislead others.</li>
+    </ul>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 5 -->
+    <h2 class="title-sub">Article 5: Disclaimer of Warranties</h2>
+    <p class="text-body">The Application is provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis, <strong>without any express or implied warranties</strong>. To the maximum extent permitted by law, the Developer disclaims all warranties, including:</p>
+    <ul class="list-unordered">
+        <li>Uninterrupted, timely, secure, or error‑free operation;</li>
+        <li>Correction of defects;</li>
+        <li>Full compatibility with all Android Devices, operating system Versions, or carrier networks;</li>
+        <li>Flawless support for all Python syntax and Third‑Party Libraries;</li>
+        <li>No loss, corruption, or unauthorized access to stored data;</li>
+        <li>Fitness for any particular purpose;</li>
+        <li>Accuracy, reliability, or completeness of obtained information.</li>
+    </ul>
+
+    <h3 class="title-section">Technical Risks</h3>
+    <p class="text-body">The Developer assumes no responsibility for data loss, Device anomalies, performance degradation, or feature unavailability due to operating system differences, Device hardware limitations, Android customizations, carrier network policies, regional network environments, or Python script logical errors.</p>
+
+    <h3 class="title-section">Third‑Party Conduct</h3>
+    <p class="text-body">Third‑Party services invoked through the Application (including WeChat Share SDK and Third‑Party Libraries downloaded via QR code scanning) are the responsibility of such Third Parties. The Developer does not warrant the security, legality, reliability, or compatibility of Third‑Party services.</p>
+
+    <h3 class="title-section">Permission Abuse and Script Behavior</h3>
+    <p class="text-body">You bear all consequences of programming behavior that causes Device charges, privacy leaks, data corruption, Device damage, or account theft. <strong>You bear full responsibility for the content, logic, security, compliance, and impact of the Python scripts you write or run.</strong></p>
+
+    <h3 class="title-section">User's Reading Obligation</h3>
+    <p class="text-body">This Agreement is clearly displayed on the installation and first launch interface and accessible in the Application's settings. <strong>If you continue to use the Application without reading, understanding, or fully reading this Agreement, you bear all consequences. The Developer assumes no responsibility.</strong></p>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 6 -->
+    <h2 class="title-sub">Article 6: Indemnification and Limitation of Liability</h2>
+    <h3 class="title-section">6.1 User's Indemnification Obligation</h3>
+    <p class="text-body">If your use of the Application violates this Agreement or applicable Laws, resulting in any Third‑Party claim against the Developer, you indemnify and hold the Developer harmless from all losses, damages, and expenses (including reasonable attorneys' fees and litigation costs).</p>
+
+    <h3 class="title-section">6.2 Cap on Liability</h3>
+    <p class="text-body">To the maximum extent permitted by law, the Developer's aggregate liability to you arising out of your use of the Application <strong>does not exceed the total amount you paid to the Developer for the use of the Application (if any)</strong>. If you paid no fees, the Developer's liability to you is <strong>zero (0)</strong>.</p>
+
+    <h3 class="title-section">6.3 Direct and Indirect Damages</h3>
+    <p class="text-body">The Developer is not liable for any indirect, incidental, special, exemplary, or punitive damages, including lost profits, loss of goodwill, data loss, business interruption, or procurement costs of substitute products or services, <strong>even if the Developer has been advised of the possibility of such damages</strong>.</p>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 7 -->
+    <h2 class="title-sub">Article 7: Incontestability of the Agreement</h2>
+    <p class="text-body">By clicking "Agree," "Confirm," checking the consent box, or installing, logging in to, or using the Application, you voluntarily, fully, and irrevocably agree to all provisions of this Agreement.</p>
+    <p class="text-body"><strong>You acknowledge and agree:</strong></p>
+    <ul class="list-unordered">
+        <li>You do not claim any provision of this Agreement invalid, revocable, or non‑binding on the grounds of "failure to read carefully," "failure to understand the meaning," "excessive content," "lack of negotiation," "standard terms," or "the Developer's failure to provide sufficient explanation";</li>
+        <li>You do not raise any complaint or objection regarding the content, fairness, or reasonableness of this Agreement before any judicial authority, arbitration institution, or administrative department;</li>
+        <li>This Agreement constitutes the complete and exclusive agreement between you and the Developer regarding your use of the Application, superseding all prior oral or written communications.</li>
+    </ul>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 8 -->
+    <h2 class="title-sub">Article 8: Amendment and Termination</h2>
+    <h3 class="title-section">8.1 Amendment</h3>
+    <p class="text-body">The Developer amends this Agreement from time to time. The amended Agreement is published within the Application or on the official website. The amended Agreement takes effect on the published "Last Updated" date. <strong>If you do not agree to the amendments, you cease using the Application. If you continue to use the Application after the Last Updated date, you agree to all amended provisions.</strong></p>
+
+    <h3 class="title-section">8.2 Termination</h3>
+    <p class="text-body">If you violate the "User Code of Conduct" provisions of this Agreement or any other material provision and fail to remedy such violation within <strong>15 Calendar Days</strong> after receiving written notice from the Developer, the Developer terminates your License and all related authorizations without prior notice. Upon termination, you cease using the Application and destroy all copies.</p>
+
+    <h3 class="title-section">8.3 Survival</h3>
+    <p class="text-body">The following provisions survive termination: Definitions; Intellectual Property Rights ownership (Article 1.1); Indemnification and Limitation of Liability (Article 6); Governing Law and Dispute Resolution (Article 9); and other provisions that by their nature survive.</p>
+
+    <div class="hr-light"></div>
+
+    <!-- Article 9 -->
+    <h2 class="title-sub">Article 9: Governing Law and Dispute Resolution</h2>
+    <h3 class="title-section">9.1 Governing Law</h3>
+    <p class="text-body">The formation, validity, performance, interpretation, and dispute resolution of this Agreement are governed by <strong>the Laws of the People's Republic of China</strong> (excluding its conflict of laws rules).</p>
+
+    <h3 class="title-section">9.2 Amicable Negotiation</h3>
+    <p class="text-body">Any dispute arising out of this Agreement is first resolved through <strong>amicable negotiation</strong> between the parties. Contact email: <strong>wxy6987@outlook.com</strong></p>
+    <p class="text-body">The negotiation period is <strong>30 Calendar Days</strong>, commencing from the date one party makes a written negotiation request specifying the matters in dispute.</p>
+
+    <h3 class="title-section">9.3 Litigation Venue</h3>
+    <p class="text-body">If negotiation fails, either party submits the dispute to the <strong>competent People's Court in the Developer's locality</strong> (the People's Court at the Developer's domicile within the People's Republic of China) for resolution through litigation. The parties exclude the jurisdiction of other jurisdictions and waive objections to the venue.</p>
+
+    <h3 class="title-section">9.4 Waiver of Jury Trial</h3>
+    <p class="text-body">To the extent permitted by law, the parties waive the right to a jury trial in any litigation arising out of this Agreement.</p>
+
+    <h3 class="title-section">9.5 Severability</h3>
+    <p class="text-body">If any provision of this Agreement is held invalid, illegal, or unenforceable, the provision is modified to achieve its original intent to the maximum extent possible, or if modification is not possible, severed from this Agreement. The remaining provisions remain valid and enforceable.</p>
+
+    <div class="hr-strong"></div>
+
+    <!-- 最终确认 -->
+    <p class="text-body"><strong>Confirm: By clicking "Agree" or installing and using the Application, you have fully understood and accepted all provisions of this Agreement and agree to be strictly bound by this Agreement.</strong></p>
+
+    <div class="hr-light"></div>
+
+    <!-- 联系方式 -->
+    <p class="contact-line"><strong>Questions:</strong> wxy6987@outlook.com</p>
+
+    <!-- 底部留白 -->
+    <div style="height: 20px;"></div>
+</body>
+  </html>
