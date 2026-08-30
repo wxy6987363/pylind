@@ -33,36 +33,7 @@
       background: #f5f8f5;
     }
 
-    /* 头部 */
-    .header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      padding-bottom: 0.8rem;
-      border-bottom: 1px solid #c8dec8;
-      margin-bottom: 1.8rem;
-    }
-
-    .logo {
-      display: flex;
-      align-items: baseline;
-      gap: 0.3rem;
-      font-size: 1.6rem;
-      font-weight: 650;
-      letter-spacing: -0.5px;
-      color: #0a2e0a;
-    }
-
-    .logo small {
-      font-size: 0.9rem;
-      font-weight: 350;
-      color: #3d6b3d;
-      margin-left: 0.2rem;
-    }
-
-    .header-actions {
+    .actions {
       display: flex;
       gap: 0.6rem;
       align-items: center;
@@ -404,21 +375,16 @@
 </head>
 <body>
 <div class="app">
-
-  <!-- 头部 -->
-  <header class="header">
-    <div class="logo">
-      Pylind
-    </div>
-    <div class="header-actions">
-      <a href="res/pylind.apk" class="btn-download" download>Download APK</a>
-    </div>
-  </header>
-
   <!-- Hero 主区域 -->
   <section class="hero">
     <div class="hero-text">
       <h1>Pylind</h1>
+    <div class="actions">
+      <a href="res/pylind.apk" class="btn-download" download>Download APK</a>
+    </div>
+    <div class="actions">
+      <a href="res/update.wgt" class="btn-download" download>Download Source (wgt)</a>
+    </div>
       <p>
         Built-in CPython 3.14 and PyPI repository, with pip support for installing dependencies. The code editor features built-in syntax highlighting and an integrated terminal for interactive use, enabling more focused development and learning on mobile.
       </p>
