@@ -1,5 +1,5 @@
 export async function onRequest(context) {
-  const response = await context.env.AI.run(
+  const response = await context.env.ai_agent.run(
     "@cf/zai-org/glm-4.7-flash",  // 仅改这里
     {
       messages: [
