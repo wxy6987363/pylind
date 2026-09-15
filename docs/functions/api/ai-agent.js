@@ -3,7 +3,7 @@ export async function onRequest(context) {
     const body = await context.request.json();
 
     const aiResult = await context.env.ai_agent.run(
-      "@cf/zai-org/glm-4.7-flash",
+      "@cf/qwen/qwen2.5-coder-32b-instruct",
       {
         messages: body.messages,
         stream: true  // 关键：开启流式
