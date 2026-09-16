@@ -1,5 +1,3 @@
-import { runWithTools } from "@cloudflare/ai-utils";
-
 export async function onRequest(context) {
   // 1. Bearer 校验
   const auth = context.request.headers.get("Authorization");
@@ -11,61 +9,39 @@ export async function onRequest(context) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const body = await context.request.json();
-
-  // 2. 用 runWithTools 做嵌入式工具调用
+  let body;
   try {
-    const response = await runWithTools(
-      context.env.ai_agent,  // 你的 AI binding
+    body = await context.request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // 2. 自动在最前面插入 system 消息
+  const SYSTEM_PROMPT = {
+    role: "system",
+    content: "你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页、发起 HTTP 请求或执行外部操作时，主动使用工具完成任务，而不是让用户自己去执行。"
+  };
+
+  const messages = [
+    SYSTEM_PROMPT,
+    ...(Array.isArray(body.messages) ? body.messages : [])
+  ];
+
+  // 3. 调用模型（流式）
+  try {
+    const aiResult = await context.env.ai_agent.run(
       "@cf/zai-org/glm-4.7-flash",
       {
-        messages: body.messages,
-        tools: [
-          {
-            name: "http_request",
-            description: "向指定 URL 发起 HTTP 请求，返回状态码和响应内容",
-            parameters: {
-              type: "object",
-              properties: {
-                url: { type: "string", description: "目标 URL" },
-                method: {
-                  type: "string",
-                  enum: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-                  description: "HTTP 方法，默认 GET"
-                },
-                headers: {
-                  type: "object",
-                  description: "请求头",
-                  additionalProperties: { type: "string" }
-                },
-                body: { type: "string", description: "请求体，POST/PUT 时使用" }
-              },
-              required: ["url"]
-            },
-            // 关键：直接内联执行函数，框架自动调用
-            function: async ({ url, method = "GET", headers = {}, body: reqBody }) => {
-              const init = { method, headers };
-              if (reqBody && !["GET", "HEAD"].includes(method)) init.body = reqBody;
-
-              const r = await fetch(url, init);
-              const text = await r.text();
-
-              return JSON.stringify({
-                status: r.status,
-                contentType: r.headers.get("content-type"),
-                body: text.slice(0, 8000)
-              });
-            }
-          }
-        ]
-      },
-      {
-        streamFinalResponse: true  // 最终回答流式返回
+        messages,
+        stream: true
       }
     );
 
-    return new Response(response, {
-      headers: { "Content-Type": "text/event-stream" }
+    return new Response(aiResult, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache"
+      }
     });
   } catch (e) {
     console.error("AI 调用失败:", e.message, e.stack);
