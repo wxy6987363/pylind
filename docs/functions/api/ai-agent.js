@@ -1,3 +1,4 @@
+
 export async function onRequest(context) {
   // 1. Bearer 校验
   const auth = context.request.headers.get("Authorization");
@@ -22,7 +23,6 @@ export async function onRequest(context) {
 重要规则：如果用户给出的 Python 代码中出现了 import layout，你必须先调用 get_doc 工具查询 layout 文档，再基于文档内容回答。`
   };
 
-  // 2. 工具定义
   const tools = [
     {
       type: "function",
@@ -46,11 +46,7 @@ export async function onRequest(context) {
       function: {
         name: "get_current_time",
         description: "获取当前本地时间，返回时区信息（UTC 偏移）",
-        parameters: {
-          type: "object",
-          properties: {},
-          required: []
-        }
+        parameters: { type: "object", properties: {}, required: [] }
       }
     },
     {
@@ -58,113 +54,137 @@ export async function onRequest(context) {
       function: {
         name: "get_doc",
         description: "查询 layout 模块的文档。当 Python 代码中出现 import layout 时调用，无需任何参数。",
-        parameters: {
-          type: "object",
-          properties: {},
-          required: []
-        }
+        parameters: { type: "object", properties: {}, required: [] }
       }
     }
   ];
 
   const messages = [SYSTEM_PROMPT, ...(Array.isArray(body.messages) ? body.messages : [])];
 
-  // 3. 多轮工具调用循环
-  const MAX_ROUNDS = 5;
-  let round = 0;
+  // 2. 用 TransformStream 手动构造 SSE，边执行工具边推状态
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
 
-  while (round < MAX_ROUNDS) {
-    round++;
+  const sse = (obj) => writer.write(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
-    const result = await context.env.ai_agent.run(
-      "@cf/zai-org/glm-4.7-flash",
-      { messages, tools, tool_choice: "auto" }
-    );
+  // 后台执行，立即返回 readable 给前端
+  (async () => {
+    try {
+      const MAX_ROUNDS = 5;
+      let round = 0;
 
-    const msg = result.choices?.[0]?.message;
-    messages.push(msg);
+      while (round < MAX_ROUNDS) {
+        round++;
 
-    if (!msg?.tool_calls?.length) break;
+        const result = await context.env.ai_agent.run(
+          "@cf/zai-org/glm-4.7-flash",
+          { messages, tools, tool_choice: "auto" }
+        );
 
-    // 4. 执行本轮所有工具调用
-    for (const call of msg.tool_calls) {
-      let args;
-      try {
-        args = JSON.parse(call.function.arguments);
-      } catch {
-        args = {};
-      }
+        const msg = result.choices?.[0]?.message;
+        messages.push(msg);
 
-      let toolResult;
-      try {
-        if (call.function.name === "http_request") {
-          const method = (args.method || "GET").toUpperCase();
-          const init = { method, headers: args.headers || {} };
-          if (args.body && !["GET", "HEAD"].includes(method)) init.body = args.body;
-          const r = await fetch(args.url, init);
-          const text = await r.text();
-          toolResult = JSON.stringify({
-            status: r.status,
-            contentType: r.headers.get("content-type"),
-            body: text.slice(0, 8000)
-          });
-        } else if (call.function.name === "get_current_time") {
-          // 本地时区：用 Intl 拿到偏移和本地时间
-          const now = new Date();
-          const offsetMin = -now.getTimezoneOffset();           // 分钟，东八区为 480
-          const sign = offsetMin >= 0 ? "+" : "-";
-          const abs = Math.abs(offsetMin);
-          const hh = String(Math.floor(abs / 60)).padStart(2, "0");
-          const mm = String(abs % 60).padStart(2, "0");
-          const utcOffset = `UTC${sign}${hh}:${mm}`;
+        if (!msg?.tool_calls?.length) break;
 
-          // 本地时间字符串
-          const local = now.toLocaleString("zh-CN", {
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            hour12: false
-          });
-
-          toolResult = JSON.stringify({
-            localTime: local,
-            utcOffset,
-            iso: now.toISOString(),
-            timestamp: now.getTime()
-          });
-        } else if (call.function.name === "get_doc") {
-          // 固定查询 /res/layout.md，不接受任何参数
-          const docUrl = new URL("/res/layout.md", context.request.url).toString();
-          const r = await fetch(docUrl);
-          if (!r.ok) {
-            toolResult = JSON.stringify({ error: `文档获取失败: ${r.status}` });
-          } else {
-            const text = await r.text();
-            toolResult = JSON.stringify({
-              url: docUrl,
-              content: text.slice(0, 12000)
-            });
+        // 本轮每个工具调用都推一条状态
+        for (const call of msg.tool_calls) {
+          let args;
+          try {
+            args = JSON.parse(call.function.arguments);
+          } catch {
+            args = {};
           }
-        } else {
-          toolResult = JSON.stringify({ error: `未知工具: ${call.function.name}` });
+
+          // 通知前端：开始调用工具
+          await sse({
+            type: "tool_call",
+            name: call.function.name,
+            args
+          });
+
+          let toolResult;
+          try {
+            if (call.function.name === "http_request") {
+              const method = (args.method || "GET").toUpperCase();
+              const init = { method, headers: args.headers || {} };
+              if (args.body && !["GET", "HEAD"].includes(method)) init.body = args.body;
+              const r = await fetch(args.url, init);
+              const text = await r.text();
+              toolResult = JSON.stringify({
+                status: r.status,
+                contentType: r.headers.get("content-type"),
+                body: text.slice(0, 8000)
+              });
+            } else if (call.function.name === "get_current_time") {
+              const now = new Date();
+              const offsetMin = -now.getTimezoneOffset();
+              const sign = offsetMin >= 0 ? "+" : "-";
+              const abs = Math.abs(offsetMin);
+              const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+              const mm = String(abs % 60).padStart(2, "0");
+              const utcOffset = `UTC${sign}${hh}:${mm}`;
+              const local = now.toLocaleString("zh-CN", {
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                hour12: false
+              });
+              toolResult = JSON.stringify({ localTime: local, utcOffset, iso: now.toISOString(), timestamp: now.getTime() });
+            } else if (call.function.name === "get_doc") {
+              const docUrl = new URL("/res/layout.md", context.request.url).toString();
+              const r = await fetch(docUrl);
+              if (!r.ok) {
+                toolResult = JSON.stringify({ error: `文档获取失败: ${r.status}` });
+              } else {
+                const text = await r.text();
+                toolResult = JSON.stringify({ url: docUrl, content: text.slice(0, 12000) });
+              }
+            } else {
+              toolResult = JSON.stringify({ error: `未知工具: ${call.function.name}` });
+            }
+          } catch (e) {
+            toolResult = JSON.stringify({ error: e.message });
+          }
+
+          // 通知前端：工具执行完成
+          await sse({
+            type: "tool_result",
+            name: call.function.name,
+            result: toolResult.slice(0, 500) // 只推摘要，避免太长
+          });
+
+          messages.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: toolResult
+          });
         }
-      } catch (e) {
-        toolResult = JSON.stringify({ error: e.message });
       }
 
-      messages.push({
-        role: "tool",
-        tool_call_id: call.id,
-        content: toolResult
-      });
+      // 3. 最后一轮流式返回最终回答
+      const finalResult = await context.env.ai_agent.run(
+        "@cf/zai-org/glm-4.7-flash",
+        { messages, stream: true }
+      );
+
+      const reader = finalResult.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await writer.write(value);
+      }
+
+      await writer.close();
+    } catch (e) {
+      await sse({ type: "error", message: e.message });
+      await writer.close();
     }
-  }
+  })();
 
-  // 5. 最后一轮流式返回
-  const finalResult = await context.env.ai_agent.run(
-    "@cf/zai-org/glm-4.7-flash",
-    { messages, stream: true }
-  );
-
-  return new Response(finalResult, {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache"
+    }
   });
 }
