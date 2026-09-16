@@ -17,7 +17,7 @@ export async function onRequest(context) {
   try {
     const response = await runWithTools(
       context.env.ai_agent,  // 你的 AI binding
-      "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
       {
         messages: body.messages,
         tools: [
