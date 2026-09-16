@@ -1,3 +1,5 @@
+import { runWithTools } from "@cloudflare/ai-utils";
+
 export async function onRequest(context) {
   // 1. Bearer 校验
   const auth = context.request.headers.get("Authorization");
@@ -11,126 +13,62 @@ export async function onRequest(context) {
 
   const body = await context.request.json();
 
-  // 2. 定义通用 HTTP 请求工具
-  const tools = [
-    {
-      type: "function",
-      function: {
-        name: "http_request",
-        description: "向指定 URL 发起 HTTP 请求，支持自定义 method、headers 和 body，返回响应状态码、content-type 和响应内容。",
-        parameters: {
-          type: "object",
-          properties: {
-            url: {
-              type: "string",
-              description: "完整的目标 URL，例如 https://api.example.com/data"
-            },
-            method: {
-              type: "string",
-              enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"],
-              description: "HTTP 请求方法，默认 GET"
-            },
-            headers: {
-              type: "object",
-              description: "可选的请求头键值对，例如 {\"Content-Type\":\"application/json\"}",
-              additionalProperties: { type: "string" }
-            },
-            body: {
-              type: "string",
-              description: "可选的请求体，POST/PUT/PATCH 时使用"
-            }
-          },
-          required: ["url"]
-        }
-      }
-    }
-  ];
-
-  // 3. 第一轮：让模型决定是否调用工具
-  let aiResult = await context.env.ai_agent.run(
-    "@cf/qwen/qwen2.5-coder-32b-instruct",
-    {
-      messages: body.messages,
-      tools,
-      tool_choice: "auto"
-    }
-  );
-
-  const msg = aiResult.choices?.[0]?.message;
-
-  // 4. 如果模型要调工具
-  if (msg?.tool_calls?.length) {
-    const call = msg.tool_calls[0];
-    let args;
-    try {
-      args = JSON.parse(call.function.arguments);
-    } catch {
-      args = {};
-    }
-
-    const method = (args.method || "GET").toUpperCase();
-    const url = args.url;
-    const headers = args.headers || {};
-    const reqBody = args.body;
-
-    // 5. 发起真实请求
-    let resultText = "";
-    try {
-      const init = { method, headers };
-      if (reqBody && !["GET", "HEAD"].includes(method)) {
-        init.body = reqBody;
-      }
-
-      const r = await fetch(url, init);
-      const contentType = r.headers.get("content-type") || "unknown";
-      const text = await r.text();
-
-      resultText = JSON.stringify({
-        status: r.status,
-        statusText: r.statusText,
-        contentType,
-        body: text.slice(0, 8192) // 截断，防止超 token
-      });
-    } catch (e) {
-      resultText = JSON.stringify({
-        error: e.message
-      });
-    }
-
-    // 6. 把结果塞回对话，让模型总结
-    const secondMessages = [
-      ...body.messages,
-      msg,
-      {
-        role: "tool",
-        tool_call_id: call.id,
-        content: resultText
-      }
-    ];
-
-    aiResult = await context.env.ai_agent.run(
+  // 2. 用 runWithTools 做嵌入式工具调用
+  try {
+    const response = await runWithTools(
+      context.env.ai_agent,  // 你的 AI binding
       "@cf/qwen/qwen2.5-coder-32b-instruct",
-      { messages: secondMessages, stream: true }
+      {
+        messages: body.messages,
+        tools: [
+          {
+            name: "http_request",
+            description: "向指定 URL 发起 HTTP 请求，返回状态码和响应内容",
+            parameters: {
+              type: "object",
+              properties: {
+                url: { type: "string", description: "目标 URL" },
+                method: {
+                  type: "string",
+                  enum: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+                  description: "HTTP 方法，默认 GET"
+                },
+                headers: {
+                  type: "object",
+                  description: "请求头",
+                  additionalProperties: { type: "string" }
+                },
+                body: { type: "string", description: "请求体，POST/PUT 时使用" }
+              },
+              required: ["url"]
+            },
+            // 关键：直接内联执行函数，框架自动调用
+            function: async ({ url, method = "GET", headers = {}, body: reqBody }) => {
+              const init = { method, headers };
+              if (reqBody && !["GET", "HEAD"].includes(method)) init.body = reqBody;
+
+              const r = await fetch(url, init);
+              const text = await r.text();
+
+              return JSON.stringify({
+                status: r.status,
+                contentType: r.headers.get("content-type"),
+                body: text.slice(0, 8000)
+              });
+            }
+          }
+        ]
+      },
+      {
+        streamFinalResponse: true  // 最终回答流式返回
+      }
     );
 
-    return new Response(aiResult, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache"
-      }
+    return new Response(response, {
+      headers: { "Content-Type": "text/event-stream" }
     });
+  } catch (e) {
+    console.error("AI 调用失败:", e.message, e.stack);
+    return Response.json({ error: e.message }, { status: 500 });
   }
-
-  // 7. 没调用工具，直接返回普通对话
-  const finalResult = await context.env.ai_agent.run(
-    "@cf/qwen/qwen2.5-coder-32b-instruct",
-    { messages: body.messages, stream: true }
-  );
-
-  return new Response(finalResult, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache"
-    }
-  });
 }
