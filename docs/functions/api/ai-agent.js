@@ -17,7 +17,7 @@ export async function onRequest(context) {
   try {
     const response = await runWithTools(
       context.env.ai_agent,  // 你的 AI binding
-      "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+      "@cf/zai-org/glm-4.7-flash",
       {
         messages: body.messages,
         tools: [
