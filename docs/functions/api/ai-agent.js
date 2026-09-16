@@ -18,10 +18,11 @@ export async function onRequest(context) {
 
   const SYSTEM_PROMPT = {
     role: "system",
-    content: "你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。"
+    content: `你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。
+重要规则：如果用户给出的 Python 代码中出现了 import layout，你必须先调用 get_doc 工具查询 layout 文档，再基于文档内容回答。`
   };
 
-  // 2. 定义多个工具
+  // 2. 工具定义
   const tools = [
     {
       type: "function",
@@ -44,7 +45,19 @@ export async function onRequest(context) {
       type: "function",
       function: {
         name: "get_current_time",
-        description: "获取当前系统时间",
+        description: "获取当前本地时间，返回时区信息（UTC 偏移）",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_doc",
+        description: "查询 layout 模块的文档。当 Python 代码中出现 import layout 时调用，无需任何参数。",
         parameters: {
           type: "object",
           properties: {},
@@ -57,29 +70,21 @@ export async function onRequest(context) {
   const messages = [SYSTEM_PROMPT, ...(Array.isArray(body.messages) ? body.messages : [])];
 
   // 3. 多轮工具调用循环
-  const MAX_ROUNDS = 5;  // 防止无限循环
+  const MAX_ROUNDS = 5;
   let round = 0;
 
   while (round < MAX_ROUNDS) {
     round++;
 
-    // 每一轮都让模型决定是否调用工具
     const result = await context.env.ai_agent.run(
       "@cf/zai-org/glm-4.7-flash",
-      {
-        messages,
-        tools,
-        tool_choice: "auto"
-      }
+      { messages, tools, tool_choice: "auto" }
     );
 
     const msg = result.choices?.[0]?.message;
     messages.push(msg);
 
-    // 如果模型不再调用工具，跳出循环
-    if (!msg?.tool_calls?.length) {
-      break;
-    }
+    if (!msg?.tool_calls?.length) break;
 
     // 4. 执行本轮所有工具调用
     for (const call of msg.tool_calls) {
@@ -95,9 +100,7 @@ export async function onRequest(context) {
         if (call.function.name === "http_request") {
           const method = (args.method || "GET").toUpperCase();
           const init = { method, headers: args.headers || {} };
-          if (args.body && !["GET", "HEAD"].includes(method)) {
-            init.body = args.body;
-          }
+          if (args.body && !["GET", "HEAD"].includes(method)) init.body = args.body;
           const r = await fetch(args.url, init);
           const text = await r.text();
           toolResult = JSON.stringify({
@@ -106,10 +109,40 @@ export async function onRequest(context) {
             body: text.slice(0, 8000)
           });
         } else if (call.function.name === "get_current_time") {
-          toolResult = JSON.stringify({
-            time: new Date().toISOString(),
-            timestamp: Date.now()
+          // 本地时区：用 Intl 拿到偏移和本地时间
+          const now = new Date();
+          const offsetMin = -now.getTimezoneOffset();           // 分钟，东八区为 480
+          const sign = offsetMin >= 0 ? "+" : "-";
+          const abs = Math.abs(offsetMin);
+          const hh = String(Math.floor(abs / 60)).padStart(2, "0");
+          const mm = String(abs % 60).padStart(2, "0");
+          const utcOffset = `UTC${sign}${hh}:${mm}`;
+
+          // 本地时间字符串
+          const local = now.toLocaleString("zh-CN", {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            hour12: false
           });
+
+          toolResult = JSON.stringify({
+            localTime: local,
+            utcOffset,
+            iso: now.toISOString(),
+            timestamp: now.getTime()
+          });
+        } else if (call.function.name === "get_doc") {
+          // 固定查询 /res/layout.md，不接受任何参数
+          const docUrl = new URL("/res/layout.md", context.request.url).toString();
+          const r = await fetch(docUrl);
+          if (!r.ok) {
+            toolResult = JSON.stringify({ error: `文档获取失败: ${r.status}` });
+          } else {
+            const text = await r.text();
+            toolResult = JSON.stringify({
+              url: docUrl,
+              content: text.slice(0, 12000)
+            });
+          }
         } else {
           toolResult = JSON.stringify({ error: `未知工具: ${call.function.name}` });
         }
@@ -117,29 +150,21 @@ export async function onRequest(context) {
         toolResult = JSON.stringify({ error: e.message });
       }
 
-      // 把工具结果塞回对话
       messages.push({
         role: "tool",
         tool_call_id: call.id,
         content: toolResult
       });
     }
-    // 循环继续，让模型基于工具结果决定下一步
   }
 
-  // 5. 最后一轮用流式返回最终回答
+  // 5. 最后一轮流式返回
   const finalResult = await context.env.ai_agent.run(
     "@cf/zai-org/glm-4.7-flash",
-    {
-      messages,
-      stream: true
-    }
+    { messages, stream: true }
   );
 
   return new Response(finalResult, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache"
-    }
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
   });
 }
