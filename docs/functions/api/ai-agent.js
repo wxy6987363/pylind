@@ -16,36 +16,39 @@ export async function onRequest(context) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // 2. System 提示词
   const SYSTEM_PROMPT = {
     role: "system",
-    content: "你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页、发起 HTTP 请求或执行外部操作时，主动使用工具完成任务。"
+    content: "你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。"
   };
 
-  // 3. 定义工具（这就是你之前缺的部分）
+  // 2. 定义多个工具
   const tools = [
     {
       type: "function",
       function: {
         name: "http_request",
-        description: "向指定 URL 发起 HTTP 请求，返回状态码和响应内容",
+        description: "向指定 URL 发起 HTTP 请求",
         parameters: {
           type: "object",
           properties: {
             url: { type: "string", description: "目标 URL" },
-            method: {
-              type: "string",
-              enum: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-              description: "HTTP 方法，默认 GET"
-            },
-            headers: {
-              type: "object",
-              description: "请求头",
-              additionalProperties: { type: "string" }
-            },
-            body: { type: "string", description: "请求体，POST/PUT 时使用" }
+            method: { type: "string", enum: ["GET", "POST", "PUT", "DELETE"], description: "HTTP 方法，默认 GET" },
+            headers: { type: "object", additionalProperties: { type: "string" } },
+            body: { type: "string", description: "请求体" }
           },
           required: ["url"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_current_time",
+        description: "获取当前系统时间",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
         }
       }
     }
@@ -53,22 +56,33 @@ export async function onRequest(context) {
 
   const messages = [SYSTEM_PROMPT, ...(Array.isArray(body.messages) ? body.messages : [])];
 
-  // 4. 第一轮：把 tools 传给模型，看它是否要调用
-  try {
-    const firstResult = await context.env.ai_agent.run(
+  // 3. 多轮工具调用循环
+  const MAX_ROUNDS = 5;  // 防止无限循环
+  let round = 0;
+
+  while (round < MAX_ROUNDS) {
+    round++;
+
+    // 每一轮都让模型决定是否调用工具
+    const result = await context.env.ai_agent.run(
       "@cf/zai-org/glm-4.7-flash",
       {
         messages,
-        tools,              // ← 关键：必须传
-        tool_choice: "auto" // ← 让模型自己决定
+        tools,
+        tool_choice: "auto"
       }
     );
 
-    const msg = firstResult.choices?.[0]?.message;
+    const msg = result.choices?.[0]?.message;
+    messages.push(msg);
 
-    // 5. 如果模型要调工具
-    if (msg?.tool_calls?.length) {
-      const call = msg.tool_calls[0];
+    // 如果模型不再调用工具，跳出循环
+    if (!msg?.tool_calls?.length) {
+      break;
+    }
+
+    // 4. 执行本轮所有工具调用
+    for (const call of msg.tool_calls) {
       let args;
       try {
         args = JSON.parse(call.function.arguments);
@@ -76,58 +90,56 @@ export async function onRequest(context) {
         args = {};
       }
 
-      const method = (args.method || "GET").toUpperCase();
-      const url = args.url;
-      const headers = args.headers || {};
-      const reqBody = args.body;
-
-      // 执行真实请求
-      let resultText;
+      let toolResult;
       try {
-        const init = { method, headers };
-        if (reqBody && !["GET", "HEAD"].includes(method)) {
-          init.body = reqBody;
+        if (call.function.name === "http_request") {
+          const method = (args.method || "GET").toUpperCase();
+          const init = { method, headers: args.headers || {} };
+          if (args.body && !["GET", "HEAD"].includes(method)) {
+            init.body = args.body;
+          }
+          const r = await fetch(args.url, init);
+          const text = await r.text();
+          toolResult = JSON.stringify({
+            status: r.status,
+            contentType: r.headers.get("content-type"),
+            body: text.slice(0, 8000)
+          });
+        } else if (call.function.name === "get_current_time") {
+          toolResult = JSON.stringify({
+            time: new Date().toISOString(),
+            timestamp: Date.now()
+          });
+        } else {
+          toolResult = JSON.stringify({ error: `未知工具: ${call.function.name}` });
         }
-        const r = await fetch(url, init);
-        const text = await r.text();
-        resultText = JSON.stringify({
-          status: r.status,
-          contentType: r.headers.get("content-type"),
-          body: text.slice(0, 8000)
-        });
       } catch (e) {
-        resultText = JSON.stringify({ error: e.message });
+        toolResult = JSON.stringify({ error: e.message });
       }
 
-      // 6. 把工具结果塞回对话，再让模型总结（流式）
-      const secondMessages = [
-        ...messages,
-        msg,
-        { role: "tool", tool_call_id: call.id, content: resultText }
-      ];
-
-      const finalResult = await context.env.ai_agent.run(
-        "@cf/zai-org/glm-4.7-flash",
-        { messages: secondMessages, stream: true }
-      );
-
-      return new Response(finalResult, {
-        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
+      // 把工具结果塞回对话
+      messages.push({
+        role: "tool",
+        tool_call_id: call.id,
+        content: toolResult
       });
     }
-
-    // 7. 没调工具，直接流式返回
-    const finalResult = await context.env.ai_agent.run(
-      "@cf/zai-org/glm-4.7-flash",
-      { messages, stream: true }
-    );
-
-    return new Response(finalResult, {
-      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
-    });
-
-  } catch (e) {
-    console.error("AI 调用失败:", e.message, e.stack);
-    return Response.json({ error: e.message }, { status: 500 });
+    // 循环继续，让模型基于工具结果决定下一步
   }
+
+  // 5. 最后一轮用流式返回最终回答
+  const finalResult = await context.env.ai_agent.run(
+    "@cf/zai-org/glm-4.7-flash",
+    {
+      messages,
+      stream: true
+    }
+  );
+
+  return new Response(finalResult, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache"
+    }
+  });
 }
