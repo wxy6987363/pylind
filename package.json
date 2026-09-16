@@ -1,0 +1,16 @@
+{
+  "name": "pylind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Pages + Workers AI + R2 项目",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public"
+  },
+  "dependencies": {
+    "@cloudflare/ai-utils": "^1.0.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
