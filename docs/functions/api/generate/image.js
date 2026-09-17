@@ -32,7 +32,7 @@ export async function onRequestPost(context) {
   }
 
   // 3. 根据长宽比计算宽高（总面积 1024*1024 = 1048576）
-  let width, height;
+  let width = 1024, height = 1024;
   if (aspectRatio) {
     const [w, h] = aspectRatio.split(":").map(Number);
     if (w && h && w > 0 && h > 0) {
@@ -43,28 +43,42 @@ export async function onRequestPost(context) {
     }
   }
 
-  if (!width || !height) {
-    width = 1024;
-    height = 1024;
-  }
-
   // 4. 对齐到 16 的倍数
   width = Math.round(width / 16) * 16;
   height = Math.round(height / 16) * 16;
 
-  // 5. 构建模型参数
-  const modelParams = { prompt, width, height };
+  // 5. 构建 FormData（FLUX.2 必须用 multipart）
+  const form = new FormData();
+  form.append("prompt", prompt);
+  form.append("width", String(width));
+  form.append("height", String(height));
   if (seed !== undefined && seed !== null) {
-    modelParams.seed = seed;
+    form.append("seed", String(seed));
   }
+
+  // FormData 无法直接序列化，需要经过 Response 构造器处理
+  const formResponse = new Response(form);
+  const formStream = formResponse.body;
+  const formContentType = formResponse.headers.get("content-type");
 
   try {
     const response = await env.AI.run(
-      "@cf/black-forest-labs/flux-1-schnell",
-      modelParams
+      "@cf/black-forest-labs/flux-2-klein-4b",
+      {
+        multipart: {
+          body: formStream,
+          contentType: formContentType,
+        },
+      }
     );
 
-    const binaryString = atob(response.image);
+    // FLUX.2 返回 {"result":{"image":"base64..."}} 格式
+    const base64Image = response.result?.image || response.image;
+    if (!base64Image) {
+      throw new Error("No image in response");
+    }
+
+    const binaryString = atob(base64Image);
     const img = Uint8Array.from(binaryString, (m) => m.codePointAt(0));
 
     return new Response(img, {
