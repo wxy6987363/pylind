@@ -19,7 +19,7 @@ export async function onRequest(context) {
 
   const SYSTEM_PROMPT = {
     role: "system",
-    content: `你是一个 AI 智能助手 GLM，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。
+    content: `你是一个 AI 智能助手，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。
 重要规则：如果用户给出的 Python 代码中出现了 import layout，你必须先调用 get_doc 工具查询 layout 文档，再基于文档内容回答。`
   };
 
@@ -77,7 +77,7 @@ export async function onRequest(context) {
       while (round < MAX_ROUNDS) {
         round++;
 
-        const result = await context.env.ai_agent.run(
+        const result = await context.env.AI.run(
           "@cf/zai-org/glm-4.7-flash",
           { messages, tools, tool_choice: "auto" }
         );
@@ -161,7 +161,7 @@ export async function onRequest(context) {
       }
 
       // 3. 最后一轮流式返回最终回答
-      const finalResult = await context.env.ai_agent.run(
+      const finalResult = await context.env.AI.run(
         "@cf/zai-org/glm-4.7-flash",
         { messages, stream: true }
       );
