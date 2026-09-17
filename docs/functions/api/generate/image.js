@@ -1,3 +1,4 @@
+// 1. 验证 Token
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -23,7 +24,9 @@ export async function onRequestPost(context) {
     });
   }
 
-  const { prompt, aspectRatio, seed } = body;
+  const { prompt, seed } = body;
+  let { width, height } = body;
+
   if (!prompt) {
     return new Response(JSON.stringify({ error: "Missing prompt" }), {
       status: 400,
@@ -31,23 +34,15 @@ export async function onRequestPost(context) {
     });
   }
 
-  // 3. 根据长宽比计算宽高（总面积 1024*1024 = 1048576）
-  let width = 1024, height = 1024;
-  if (aspectRatio) {
-    const [w, h] = aspectRatio.split(":").map(Number);
-    if (w && h && w > 0 && h > 0) {
-      const total = 1048576;
-      const ratio = w / h;
-      height = Math.round(Math.sqrt(total / ratio));
-      width = Math.round(total / height);
-    }
-  }
+  // 3. 默认尺寸
+  width = Number(width) || 1024;
+  height = Number(height) || 1024;
 
-  // 4. 对齐到 16 的倍数
-  width = Math.round(width / 64) * 64;
-  height = Math.round(height / 64) * 64;
+  // 4. 限制范围 256-1920，并对齐到 64 的倍数
+  width = Math.min(1920, Math.max(256, Math.round(width / 64) * 64));
+  height = Math.min(1920, Math.max(256, Math.round(height / 64) * 64));
 
-  // 5. 构建 FormData（FLUX.2 必须用 multipart）
+  // 5. 构建 FormData
   const form = new FormData();
   form.append("prompt", prompt);
   form.append("width", String(width));
@@ -56,7 +51,6 @@ export async function onRequestPost(context) {
     form.append("seed", String(seed));
   }
 
-  // FormData 无法直接序列化，需要经过 Response 构造器处理
   const formResponse = new Response(form);
   const formStream = formResponse.body;
   const formContentType = formResponse.headers.get("content-type");
@@ -72,7 +66,6 @@ export async function onRequestPost(context) {
       }
     );
 
-    // FLUX.2 返回 {"result":{"image":"base64..."}} 格式
     const base64Image = response.result?.image || response.image;
     if (!base64Image) {
       throw new Error("No image in response");
