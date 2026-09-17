@@ -44,8 +44,8 @@ export async function onRequestPost(context) {
   }
 
   // 4. 对齐到 16 的倍数
-  width = Math.round(width / 16) * 16;
-  height = Math.round(height / 16) * 16;
+  width = Math.round(width / 64) * 64;
+  height = Math.round(height / 64) * 64;
 
   // 5. 构建 FormData（FLUX.2 必须用 multipart）
   const form = new FormData();
