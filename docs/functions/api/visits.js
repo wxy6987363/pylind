@@ -8,7 +8,7 @@ export async function onRequest(context) {
     return handleGet(env);
   }
 
-  // POST 请求：获取访问量（需要验证 Token）
+  // POST 请求：获取访问量（同源校验）
   if (method === 'POST') {
     return handlePost(request, env);
   }
@@ -22,11 +22,9 @@ async function handleGet(env) {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const key = `visits:${today}`;
 
-    // 从 KV 读取当前计数（如果没有则为 0）
     let count = await env.KV.get(key);
     count = count ? parseInt(count, 10) : 0;
 
-    // 计数 +1 并写回
     count += 1;
     await env.KV.put(key, count.toString());
 
@@ -34,7 +32,10 @@ async function handleGet(env) {
       JSON.stringify({ date: today, count }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        },
       }
     );
   } catch (err) {
@@ -48,29 +49,33 @@ async function handleGet(env) {
   }
 }
 
-// 处理 POST：获取访问量（需要 Token 验证）
+// 处理 POST：获取访问量（同源校验）
 async function handlePost(request, env) {
-  // 验证 API_TOKEN
-  const authHeader = request.headers.get('Authorization');
-  const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+  // 同源校验：检查 Origin 或 Referer 是否与请求 Host 一致
+  const origin = request.headers.get('Origin');
+  const referer = request.headers.get('Referer');
+  const host = request.headers.get('Host');
 
-  if (!env.API_TOKEN || token !== env.API_TOKEN) {
+  const sameOrigin =
+    (origin && new URL(origin).host === host) ||
+    (referer && new URL(referer).host === host);
+
+  if (!sameOrigin) {
     return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
+      JSON.stringify({ error: 'Forbidden: cross-origin request' }),
       {
-        status: 401,
+        status: 403,
         headers: { 'Content-Type': 'application/json' },
       }
     );
   }
 
   try {
-    // 解析请求体，支持查询指定日期或日期范围
     let body = {};
     try {
       body = await request.json();
     } catch (e) {
-      // 如果没有 body 或不是 JSON，忽略
+      // 没有 body 或不是 JSON，忽略
     }
 
     const { date, startDate, endDate } = body;
@@ -110,7 +115,7 @@ async function handlePost(request, env) {
       );
     }
 
-    // 情况 3：查询所有（列出 KV 中所有 visits: 前缀的键）
+    // 情况 3：查询所有
     const list = await env.KV.list({ prefix: 'visits:' });
     const results = [];
 
@@ -120,7 +125,6 @@ async function handlePost(request, env) {
       results.push({ date, count: count ? parseInt(count, 10) : 0 });
     }
 
-    // 按日期排序
     results.sort((a, b) => a.date.localeCompare(b.date));
 
     return new Response(
@@ -139,4 +143,4 @@ async function handlePost(request, env) {
       }
     );
   }
-    }
+}
