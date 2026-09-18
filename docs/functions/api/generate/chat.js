@@ -19,7 +19,8 @@ export async function onRequest(context) {
   const SYSTEM_PROMPT = {
     role: "system",
     content: `你是一个 AI 智能助手，可以调用工具。当用户需要访问网页或执行外部操作时，主动使用工具完成任务。可以连续调用多个工具来完成复杂任务。
-重要规则：如果用户给出的 Python 代码中出现了 import layout，你必须先调用 get_doc 工具查询 layout 文档，再基于文档内容回答。`
+重要规则：如果用户给出的 Python 代码中出现了 import layout，你必须先调用 get_doc 工具查询 layout 文档，再基于文档内容回答。
+当用户要求生成图片时，调用 generate_image 工具，并把返回的 markdown 字段原样输出，不要修改或截断。`
   };
 
   const tools = [
@@ -54,6 +55,23 @@ export async function onRequest(context) {
         name: "get_doc",
         description: "查询 layout 模块的文档。当 Python 代码中出现 import layout 时调用，无需任何参数。",
         parameters: { type: "object", properties: {}, required: [] }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "generate_image",
+        description: "根据提示词生成图像。返回 Markdown 图片语法 ![](data:image/jpeg;base64,...)，可直接展示。",
+        parameters: {
+          type: "object",
+          properties: {
+            prompt: { type: "string", description: "图像提示词" },
+            width: { type: "number", description: "宽度，256-1920，64 的倍数，默认 1024" },
+            height: { type: "number", description: "高度，256-1920，64 的倍数，默认 1024" },
+            seed: { type: "number", description: "随机种子，可选" }
+          },
+          required: ["prompt"]
+        }
       }
     }
   ];
@@ -137,6 +155,46 @@ export async function onRequest(context) {
                 const text = await r.text();
                 toolResult = JSON.stringify({ url: docUrl, content: text.slice(0, 12000) });
               }
+            } else if (call.function.name === "generate_image") {
+              const p = args.prompt;
+              if (!p) {
+                toolResult = JSON.stringify({ error: "缺少 prompt" });
+              } else {
+                let w = Number(args.width) || 1024;
+                let h = Number(args.height) || 1024;
+                w = Math.min(1920, Math.max(256, Math.round(w / 64) * 64));
+                h = Math.min(1920, Math.max(256, Math.round(h / 64) * 64));
+
+                const form = new FormData();
+                form.append("prompt", p);
+                form.append("width", String(w));
+                form.append("height", String(h));
+                if (args.seed !== undefined && args.seed !== null) {
+                  form.append("seed", String(args.seed));
+                }
+
+                const formResponse = new Response(form);
+                const imageResp = await context.env.AI.run(
+                  "@cf/black-forest-labs/flux-2-klein-4b",
+                  {
+                    multipart: {
+                      body: formResponse.body,
+                      contentType: formResponse.headers.get("content-type"),
+                    },
+                  }
+                );
+
+                const b64 = imageResp.result?.image || imageResp.image;
+                if (!b64) {
+                  toolResult = JSON.stringify({ error: "图像生成失败" });
+                } else {
+                  toolResult = JSON.stringify({
+                    width: w,
+                    height: h,
+                    markdown: `![generated](data:image/jpeg;base64,${b64})`
+                  });
+                }
+              }
             } else {
               toolResult = JSON.stringify({ error: `未知工具: ${call.function.name}` });
             }
@@ -144,11 +202,13 @@ export async function onRequest(context) {
             toolResult = JSON.stringify({ error: e.message });
           }
 
-          // 通知前端：工具执行完成
+          // 通知前端：工具执行完成（generate_image 完整推送，避免截断 base64）
           await sse({
             type: "tool_result",
             name: call.function.name,
-            result: toolResult.slice(0, 500) // 只推摘要，避免太长
+            result: call.function.name === "generate_image"
+              ? toolResult
+              : toolResult.slice(0, 500)
           });
 
           messages.push({
@@ -187,4 +247,3 @@ export async function onRequest(context) {
     }
   });
 }
-
