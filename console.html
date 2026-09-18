@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客流量统计</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #1f2937;
+      min-height: 100vh;
+      padding: 32px 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* 四个卡片横向 flex */
+    .top-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1 1 0;
+      min-width: 150px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+    }
+
+    .stat-number {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-desc {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #374151;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header .hint {
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .chart-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: #d1d5db transparent;
+    }
+
+    .chart-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .chart-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chart-scroll::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 4px;
+    }
+
+    .chart-scroll::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 180px;
+      min-width: 100%;
+      width: max-content;
+    }
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      flex: 0 0 auto;
+      min-width: 28px;
+    }
+
+    .bar-value {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-bottom: 4px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .bar {
+      width: 22px;
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 4px 4px 0 0;
+      min-height: 3px;
+      transition: opacity 0.15s ease;
+      cursor: pointer;
+    }
+
+    .bar:hover {
+      opacity: 0.75;
+    }
+
+    .bar-item.today .bar {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .bar-item.today .bar-value {
+      color: #d97706;
+      font-weight: 700;
+    }
+
+    .bar-label {
+      font-size: 0.65rem;
+      color: #9ca3af;
+      margin-top: 6px;
+      white-space: nowrap;
+      transform: rotate(-45deg);
+      transform-origin: center;
+      height: 28px;
+    }
+
+    .state {
+      padding: 48px 20px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    .btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #1d4ed8;
+    }
+
+    @media (max-width: 600px) {
+      .stat-card {
+        flex: 1 1 calc(50% - 8px);
+      }
+      .stat-number {
+        font-size: 1.5rem;
+      }
+      body {
+        padding: 20px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 四个卡片，横向 flex -->
+    <div class="top-stats">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-today">0</div>
+        <div class="stat-desc">今日客流量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-7">0</div>
+        <div class="stat-desc">七天内客流量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-30">0</div>
+        <div class="stat-desc">三十天内客流量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-desc">总客流量</div>
+      </div>
+    </div>
+
+    <!-- 图表卡片 -->
+    <div class="card">
+      <div class="card-header">
+        客流量图表
+        <span class="hint">最近 90 天 · 可横向滚动</span>
+      </div>
+      <div class="chart-scroll" id="chartScroll">
+        <div class="chart" id="chart">
+          <div class="state">加载中…</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API_URL = '/api/visits';
+    const CHART_DAYS = 90;
+
+    // 格式化数字：1234 -> 1.2K, 1234567 -> 1.2M
+    function formatNumber(n) {
+      if (n === null || n === undefined || isNaN(n)) return '0';
+      if (n >= 1_000_000) {
+        const v = n / 1_000_000;
+        return (v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, '')) + 'M';
+      }
+      if (n >= 1_000) {
+        const v = n / 1_000;
+        return (v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, '')) + 'K';
+      }
+      return String(n);
+    }
+
+    async function fetchVisits() {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function dateRange(startDate, endDate) {
+      const days = [];
+      const d = new Date(startDate + 'T00:00:00Z');
+      const end = new Date(endDate + 'T00:00:00Z');
+      while (d <= end) {
+        days.push(d.toISOString().slice(0, 10));
+        d.setUTCDate(d.getUTCDate() + 1);
+      }
+      return days;
+    }
+
+    function computeStats(results) {
+      const today = new Date().toISOString().slice(0, 10);
+      const map = new Map(results.map(r => [r.date, r.count]));
+
+      const todayCount = map.get(today) || 0;
+
+      const last7Dates = dateRange(
+        new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10),
+        today
+      );
+      const last7 = last7Dates.reduce((s, d) => s + (map.get(d) || 0), 0);
+
+      const last30Dates = dateRange(
+        new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
+        today
+      );
+      const last30 = last30Dates.reduce((s, d) => s + (map.get(d) || 0), 0);
+
+      const total = results.reduce((s, r) => s + r.count, 0);
+
+      return { todayCount, last7, last30, total, map, today };
+    }
+
+    function renderChart(map, today) {
+      const dates = dateRange(
+        new Date(Date.now() - (CHART_DAYS - 1) * 86400000).toISOString().slice(0, 10),
+        today
+      );
+
+      const max = Math.max(...dates.map(d => map.get(d) || 0), 1);
+
+      return dates.map(d => {
+        const count = map.get(d) || 0;
+        const heightPct = count === 0 ? 0 : Math.max((count / max) * 100, 2);
+        const isToday = d === today;
+        const label = d.slice(5);
+        return `
+          <div class="bar-item${isToday ? ' today' : ''}" title="${d}: ${count}">
+            <div class="bar-value">${count > 0 ? formatNumber(count) : ''}</div>
+            <div class="bar" style="height: ${heightPct}%"></div>
+            <div class="bar-label">${label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateStats({ todayCount, last7, last30, total }) {
+      document.getElementById('stat-today').textContent = formatNumber(todayCount);
+      document.getElementById('stat-7').textContent = formatNumber(last7);
+      document.getElementById('stat-30').textContent = formatNumber(last30);
+      document.getElementById('stat-total').textContent = formatNumber(total);
+    }
+
+    function render(data) {
+      const results = data.results || [];
+      const stats = computeStats(results);
+
+      updateStats(stats);
+
+      const chart = document.getElementById('chart');
+      if (!results.length) {
+        chart.innerHTML = '<div class="state">暂无访问数据</div>';
+        return;
+      }
+
+      chart.innerHTML = renderChart(stats.map, stats.today);
+
+      const scroller = document.getElementById('chartScroll');
+      requestAnimationFrame(() => {
+        scroller.scrollLeft = scroller.scrollWidth;
+      });
+    }
+
+    function renderError(err) {
+      document.getElementById('chart').innerHTML = `
+        <div class="state error">
+          加载失败：${err.message}
+          <br>
+          <button class="btn" onclick="init()">重试</button>
+        </div>
+      `;
+    }
+
+    async function init() {
+      try {
+        const data = await fetchVisits();
+        render(data);
+      } catch (err) {
+        renderError(err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
