@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>客流量统计</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -24,7 +25,6 @@
       margin: 0 auto;
     }
 
-    /* 四个卡片横向 flex */
     .top-stats {
       display: flex;
       flex-wrap: wrap;
@@ -79,6 +79,18 @@
       color: #9ca3af;
     }
 
+    .demo-badge {
+      display: none;
+      padding: 12px 20px 0;
+      font-size: 0.75rem;
+      color: #d97706;
+    }
+
+    .demo-badge.show {
+      display: block;
+    }
+
+    /* 滚动容器：横向滚动 */
     .chart-scroll {
       overflow-x: auto;
       overflow-y: hidden;
@@ -104,89 +116,9 @@
       background: #9ca3af;
     }
 
-    .chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-      height: 180px;
-      min-width: 100%;
-      width: max-content;
-    }
-
-    .bar-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      height: 100%;
-      flex: 0 0 auto;
-      min-width: 28px;
-    }
-
-    .bar-value {
-      font-size: 0.7rem;
-      color: #6b7280;
-      margin-bottom: 4px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .bar {
-      width: 22px;
-      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-      border-radius: 4px 4px 0 0;
-      min-height: 3px;
-      transition: opacity 0.15s ease;
-      cursor: pointer;
-    }
-
-    .bar:hover {
-      opacity: 0.75;
-    }
-
-    .bar-item.today .bar {
-      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-    }
-
-    .bar-item.today .bar-value {
-      color: #d97706;
-      font-weight: 700;
-    }
-
-    .bar-label {
-      font-size: 0.65rem;
-      color: #9ca3af;
-      margin-top: 6px;
-      white-space: nowrap;
-      transform: rotate(-45deg);
-      transform-origin: center;
-      height: 28px;
-    }
-
-    .state {
-      padding: 48px 20px;
-      text-align: center;
-      color: #6b7280;
-      font-size: 0.95rem;
-    }
-
-    .error {
-      color: #dc2626;
-    }
-
-    .btn {
-      margin-top: 12px;
-      padding: 8px 16px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-
-    .btn:hover {
-      background: #1d4ed8;
+    /* canvas 固定宽度，不随容器压缩 */
+    .chart-scroll canvas {
+      display: block;
     }
 
     @media (max-width: 600px) {
@@ -205,7 +137,6 @@
 <body>
   <div class="container">
 
-    <!-- 四个卡片，横向 flex -->
     <div class="top-stats">
       <div class="stat-card">
         <div class="stat-number" id="stat-today">0</div>
@@ -225,16 +156,17 @@
       </div>
     </div>
 
-    <!-- 图表卡片 -->
     <div class="card">
       <div class="card-header">
         客流量图表
         <span class="hint">最近 90 天 · 可横向滚动</span>
       </div>
+      <div class="demo-badge" id="demoBadge">
+        ⚠️ 数据获取失败，当前展示为示例数据
+      </div>
       <div class="chart-scroll" id="chartScroll">
-        <div class="chart" id="chart">
-          <div class="state">加载中…</div>
-        </div>
+        <!-- width 会在 JS 中根据天数 × 每日宽度动态设置 -->
+        <canvas id="chart"></canvas>
       </div>
     </div>
 
@@ -243,6 +175,9 @@
   <script>
     const API_URL = '/api/visits';
     const CHART_DAYS = 90;
+    const DAY_WIDTH = 40;       // 每天占据的固定宽度（px）
+    const CHART_HEIGHT = 300;   // 图表高度（px）
+    let chartInstance = null;
 
     // 格式化数字：1234 -> 1.2K, 1234567 -> 1.2M
     function formatNumber(n) {
@@ -279,10 +214,8 @@
       return days;
     }
 
-    function computeStats(results) {
+    function computeStats(map, results) {
       const today = new Date().toISOString().slice(0, 10);
-      const map = new Map(results.map(r => [r.date, r.count]));
-
       const todayCount = map.get(today) || 0;
 
       const last7Dates = dateRange(
@@ -299,76 +232,180 @@
 
       const total = results.reduce((s, r) => s + r.count, 0);
 
-      return { todayCount, last7, last30, total, map, today };
+      return { todayCount, last7, last30, total };
     }
 
-    function renderChart(map, today) {
+    function updateStats(stats) {
+      document.getElementById('stat-today').textContent = formatNumber(stats.todayCount);
+      document.getElementById('stat-7').textContent = formatNumber(stats.last7);
+      document.getElementById('stat-30').textContent = formatNumber(stats.last30);
+      document.getElementById('stat-total').textContent = formatNumber(stats.total);
+    }
+
+    // 生成模拟数据（带波动和缓慢增长）
+    function mockData() {
+      const today = new Date();
+      const dates = [];
+      const values = [];
+      let base = 50;
+      for (let i = CHART_DAYS - 1; i >= 0; i--) {
+        const d = new Date(today.getTime() - i * 86400000);
+        dates.push(d.toISOString().slice(0, 10));
+        base += (Math.random() - 0.45) * 15;
+        base = Math.max(base, 5);
+        values.push(Math.round(base));
+      }
+      return { dates, values };
+    }
+
+    function buildChartData(map, today) {
       const dates = dateRange(
         new Date(Date.now() - (CHART_DAYS - 1) * 86400000).toISOString().slice(0, 10),
         today
       );
-
-      const max = Math.max(...dates.map(d => map.get(d) || 0), 1);
-
-      return dates.map(d => {
-        const count = map.get(d) || 0;
-        const heightPct = count === 0 ? 0 : Math.max((count / max) * 100, 2);
-        const isToday = d === today;
-        const label = d.slice(5);
-        return `
-          <div class="bar-item${isToday ? ' today' : ''}" title="${d}: ${count}">
-            <div class="bar-value">${count > 0 ? formatNumber(count) : ''}</div>
-            <div class="bar" style="height: ${heightPct}%"></div>
-            <div class="bar-label">${label}</div>
-          </div>
-        `;
-      }).join('');
+      return {
+        dates,
+        values: dates.map(d => map.get(d) || 0),
+      };
     }
 
-    function updateStats({ todayCount, last7, last30, total }) {
-      document.getElementById('stat-today').textContent = formatNumber(todayCount);
-      document.getElementById('stat-7').textContent = formatNumber(last7);
-      document.getElementById('stat-30').textContent = formatNumber(last30);
-      document.getElementById('stat-total').textContent = formatNumber(total);
+    function renderChart({ dates, values }) {
+      const canvas = document.getElementById('chart');
+
+      // 关键：canvas 宽度 = 天数 × 每日固定宽度
+      const width = dates.length * DAY_WIDTH;
+      canvas.width = width;
+      canvas.height = CHART_HEIGHT;
+      canvas.style.width = width + 'px';
+      canvas.style.height = CHART_HEIGHT + 'px';
+
+      const ctx = canvas.getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      // 渐变填充
+      const gradient = ctx.createLinearGradient(0, 0, 0, CHART_HEIGHT);
+      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
+      gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: '客流量',
+            data: values,
+            borderColor: '#2563eb',
+            backgroundColor: gradient,
+            borderWidth: 2,
+            pointRadius: 2,
+            pointBackgroundColor: '#2563eb',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#2563eb',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            tension: 0.35,
+            fill: true,
+          }],
+        },
+        options: {
+          // 关键：关闭响应式，让 canvas 按固定尺寸渲染
+          responsive: false,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 600,
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111827',
+              padding: 10,
+              cornerRadius: 8,
+              titleFont: { size: 12 },
+              bodyFont: { size: 13, weight: '600' },
+              displayColors: false,
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => `客流量：${formatNumber(item.parsed.y)}`,
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                color: '#9ca3af',
+                font: { size: 10 },
+                maxRotation: 0,
+                autoSkip: false,        // 每天一个刻度，不自动跳过
+                callback: function (value) {
+                  const label = this.getLabelForValue(value);
+                  return label.slice(5); // MM-DD
+                },
+              },
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f3f4f6' },
+              border: { display: false },
+              ticks: {
+                color: '#9ca3af',
+                font: { size: 10 },
+                callback: (v) => formatNumber(v),
+              },
+            },
+          },
+        },
+      });
     }
 
-    function render(data) {
-      const results = data.results || [];
-      const stats = computeStats(results);
+    function setDemoBadge(show) {
+      document.getElementById('demoBadge').classList.toggle('show', show);
+    }
 
-      updateStats(stats);
-
-      const chart = document.getElementById('chart');
-      if (!results.length) {
-        chart.innerHTML = '<div class="state">暂无访问数据</div>';
-        return;
-      }
-
-      chart.innerHTML = renderChart(stats.map, stats.today);
-
+    // 滚动到最右侧（最新日期）
+    function scrollToEnd() {
       const scroller = document.getElementById('chartScroll');
       requestAnimationFrame(() => {
         scroller.scrollLeft = scroller.scrollWidth;
       });
     }
 
-    function renderError(err) {
-      document.getElementById('chart').innerHTML = `
-        <div class="state error">
-          加载失败：${err.message}
-          <br>
-          <button class="btn" onclick="init()">重试</button>
-        </div>
-      `;
-    }
-
     async function init() {
+      let stats, chartData, isDemo = false;
+
       try {
         const data = await fetchVisits();
-        render(data);
+        const results = data.results || [];
+
+        if (!results.length) {
+          throw new Error('无数据');
+        }
+
+        const map = new Map(results.map(r => [r.date, r.count]));
+        const today = new Date().toISOString().slice(0, 10);
+
+        stats = computeStats(map, results);
+        chartData = buildChartData(map, today);
       } catch (err) {
-        renderError(err);
+        isDemo = true;
+        const mock = mockData();
+        const map = new Map(mock.dates.map((d, i) => [d, mock.values[i]]));
+        const fakeResults = mock.dates.map((d, i) => ({ date: d, count: mock.values[i] }));
+
+        stats = computeStats(map, fakeResults);
+        chartData = { dates: mock.dates, values: mock.values };
       }
+
+      updateStats(stats);
+      renderChart(chartData);
+      setDemoBadge(isDemo);
+      scrollToEnd();
     }
 
     init();
