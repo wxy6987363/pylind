@@ -294,7 +294,7 @@
     </ul>
 
     <h3 class="title-section">Technology and Permissions</h3>
-    <p class="text-body"><strong>27. "System Permissions":</strong> Capabilities granted by the Device Operating System to the Application to access Device hardware resources or specific data. The Application requests SMS permissions, camera permissions, network permissions, and install‑apps permission, as detailed in Article 3.</p>
+    <p class="text-body"><strong>27. "System Permissions":</strong> Capabilities granted by the Device Operating System to the Application to access Device hardware resources or specific data. The Application requests SMS permissions, camera permissions, network permissions, and <strong>all files access permission</strong>, as detailed in Article 3.</p>
     <p class="text-body"><strong>28. "CPython":</strong> The official reference implementation of the Python programming language maintained by the Python Software Foundation (the C language implementation), embedded in the Application to execute Python scripts. CPython is governed by the Python Software Foundation License Agreement.</p>
     <p class="text-body"><strong>29. "Third‑Party Libraries" or "External Modules":</strong> Python code libraries or software modules not built into the Application but imported or invoked by the User through the Application. Third‑Party Libraries are governed by their own license terms. This Agreement does not apply to Third‑Party Libraries.</p>
     <p class="text-body"><strong>30. "Reverse Engineering":</strong> Obtaining Source Code, data structures, logical processes, or design concepts by decompiling, disassembling, unpacking, debugging, tracing, analyzing, or otherwise examining the Application's binary code or installation packages. Because the Application is built entirely using HTML, CSS, and JavaScript, Reverse Engineering through standard web debugging tools (browser developer tools) is expressly permitted by this Agreement.</p>
@@ -316,10 +316,11 @@
     </ul>
     <p class="text-body"><strong>34. "Object Code" or "Binary":</strong> Code generated after compilation, assembly, or linking of Source Code, directly executable or further processable by a computer. Because the Application is built entirely using Web technologies, its Object Code is minified and obfuscated JavaScript, CSS, and HTML files, and contains no .so (shared library) files.</p>
     <p class="text-body"><strong>35. "WeChat Share SDK":</strong> The third‑party software development kit provided by Tencent WeChat for sharing content to WeChat, including sharing text, images, links, and other content to WeChat Moments and WeChat Friends. The WeChat Share SDK is governed by its own terms of service.</p>
+    <p class="text-body"><strong>36. "Advertising SDK":</strong> A third‑party software development kit integrated into the Application for serving advertisements. The Advertising SDK may collect device identifiers, approximate location, and other data as described in its own privacy policy. The Advertising SDK is governed by its own terms of service.</p>
 
     <h3 class="title-section">Legal Effect</h3>
-    <p class="text-body"><strong>36. "Standard Terms":</strong> Terms pre‑drafted by the Developer for repeated use and not negotiated with the User. The User acknowledges that all terms in this Agreement are Standard Terms and voluntarily agrees to be bound by them. Terms exempting or limiting the Developer's liability are <strong>in bold</strong>.</p>
-    <p class="text-body"><strong>37. "Notice":</strong> Any act by the Developer to convey information to the User, including:</p>
+    <p class="text-body"><strong>37. "Standard Terms":</strong> Terms pre‑drafted by the Developer for repeated use and not negotiated with the User. The User acknowledges that all terms in this Agreement are Standard Terms and voluntarily agrees to be bound by them. Terms exempting or limiting the Developer's liability are <strong>in bold</strong>.</p>
+    <p class="text-body"><strong>38. "Notice":</strong> Any act by the Developer to convey information to the User, including:</p>
     <ul class="list-unordered">
         <li>In‑app pop‑ups or banner prompts;</li>
         <li>Explanations in the Application's update logs;</li>
@@ -429,12 +430,12 @@
 
     <!-- Article 3 -->
     <h2 class="title-sub">Article 3: System Permissions</h2>
-    <p class="text-body">To provide the Application's Core Functionality, Pylind requests the following System Permissions. You refuse to grant permissions, but this affects normal use of some functions.</p>
+    <p class="text-body">To provide the Application's Core Functionality, Pylind requests the following System Permissions. You may refuse to grant permissions, but this affects normal use of some functions.</p>
 
     <h3 class="title-section">3.1 SMS Permissions (SEND_SMS / RECEIVE_SMS / READ_SMS)</h3>
     <ul class="list-unordered">
         <li><strong>Function</strong>: Support the built‑in CPython <code>sms</code> extension module, enabling Python scripts to send, receive, and read SMS messages on the Device.</li>
-        <li><strong>User Control</strong>: Not essential for core basic functions. You refuse during installation or first use. Refusal affects only the <code>sms</code> module.</li>
+        <li><strong>User Control</strong>: Not essential for core basic functions. You may refuse during installation or first use. Refusal affects only the <code>sms</code> module.</li>
         <li><strong>Privacy</strong>: These permissions read SMS content, involving personal privacy data.</li>
         <li><strong>Liability Waiver</strong>: <strong>If you grant these permissions and use the <code>sms</code> module, all charges, privacy leaks, or legal liabilities are solely borne by you. The Developer assumes no responsibility.</strong></li>
     </ul>
@@ -442,23 +443,24 @@
     <h3 class="title-section">3.2 Camera Permission (CAMERA)</h3>
     <ul class="list-unordered">
         <li><strong>Function</strong>: Support scanning QR codes to quickly download and install Python packages not yet included in the Application's built‑in package repository. By scanning package source URLs or PyPI links, you can conveniently add Third‑Party Libraries to your Python environment.</li>
-        <li><strong>User Control</strong>: Not essential for core basic functions. You refuse during installation or first use. Refusal affects only the QR code scanning package download feature.</li>
+        <li><strong>User Control</strong>: Not essential for core basic functions. You may refuse during installation or first use. Refusal affects only the QR code scanning package download feature.</li>
         <li><strong>Privacy</strong>: This permission accesses the Device's camera hardware and captures images of QR codes. The captured content is used solely for parsing package download information. <strong>No images, photos, or video data are stored, uploaded, or shared with any Third Party.</strong></li>
         <li><strong>Liability Waiver</strong>: <strong>You bear full responsibility for the legality, security, and compatibility of any Python packages downloaded via QR code scanning. The Developer does not audit, verify, or endorse Third‑Party packages. The Developer assumes no responsibility for any damages arising from the use of such packages.</strong></li>
     </ul>
 
     <h3 class="title-section">3.3 Network Permissions (INTERNET / ACCESS_NETWORK_STATE)</h3>
     <ul class="list-unordered">
-        <li><strong>Function</strong>: Enable network prompts (version updates, community content) and network request functionality in Python scripts.</li>
+        <li><strong>Function</strong>: Enable network prompts (version updates, community content), network request functionality in Python scripts, and the loading and display of advertisements from the Advertising SDK.</li>
         <li><strong>User Control</strong>: Refusal prevents prompts from displaying and network‑requesting scripts from running.</li>
         <li><strong>Cost</strong>: Network use generates data traffic charges from your telecommunications carrier.</li>
     </ul>
 
-    <h3 class="title-section">3.4 Install Apps Permission (REQUEST_INSTALL_PACKAGES)</h3>
+    <h3 class="title-section">3.4 All Files Access Permission (MANAGE_EXTERNAL_STORAGE)</h3>
     <ul class="list-unordered">
-        <li><strong>Function</strong>: <strong>Reserved</strong> for the Application's future <strong>auto‑update</strong> functionality.</li>
-        <li><strong>User Control</strong>: Currently not enabled. When enabled, the Developer notifies you via pop‑ups or update logs and installs Updates only with your explicit consent.</li>
-        <li><strong>Security</strong>: The Developer pushes digitally signed update packages only through Official Channels.</li>
+        <li><strong>Function</strong>: Support the management of project files stored on the Device's shared storage. This includes reading, writing, creating, renaming, and deleting Python script files, project directories, configuration files, and downloaded packages. The permission enables the Application to provide a complete file management experience for your Python projects.</li>
+        <li><strong>User Control</strong>: This permission is essential for core file management functionality. You may refuse to grant it, but the Application will not be able to read or write project files on your Device's shared storage, severely limiting its usefulness. You can revoke this permission at any time through your Device settings, but doing so will disable the file management features.</li>
+        <li><strong>Privacy</strong>: This permission grants broad access to files on your Device's shared storage. The Application accesses only files and directories necessary for managing your Python projects. <strong>The Developer does not collect, upload, or share your file contents with any Third Party.</strong></li>
+        <li><strong>Liability Waiver</strong>: <strong>You bear full responsibility for the files you create, modify, or delete through the Application. The Developer assumes no responsibility for any data loss, corruption, or unauthorized access to files resulting from your use of this permission.</strong></li>
     </ul>
 
     <h3 class="title-section">3.5 WeChat Share SDK</h3>
@@ -469,6 +471,14 @@
         <li><strong>Third‑Party Terms</strong>: The WeChat Share SDK is provided by Tencent and is governed by its own terms of service and privacy policy. The Developer does not control or assume responsibility for the SDK's operation or data handling practices.</li>
     </ul>
 
+    <h3 class="title-section">3.6 Advertising SDK</h3>
+    <ul class="list-unordered">
+        <li><strong>Function</strong>: The Application integrates one or more third‑party Advertising SDKs to display advertisements. These advertisements support the continued development and maintenance of the Application. The Advertising SDK may display banner ads, interstitial ads, rewarded video ads, or other ad formats.</li>
+        <li><strong>User Control</strong>: Advertisements are displayed as part of the Application's free tier. By using the Application, you acknowledge and agree to the display of advertisements. Some ad formats may be skippable or provide rewards.</li>
+        <li><strong>Privacy</strong>: The Advertising SDK may collect device identifiers (such as Advertising ID), approximate location (based on IP address), device type, operating system version, and interaction data with advertisements. This data is used for ad targeting, frequency capping, and performance measurement. <strong>Please refer to the specific Advertising SDK provider's privacy policy for details.</strong> The Developer does not control the data collection practices of the Advertising SDK.</li>
+        <li><strong>Third‑Party Terms</strong>: The Advertising SDK is provided by third‑party ad networks and is governed by their own terms of service and privacy policies. The Developer does not control or assume responsibility for the SDK's operation, content, or data handling practices. <strong>You agree that the Developer shall not be liable for any losses or damages arising from your interaction with advertisements or the Advertising SDK.</strong></li>
+    </ul>
+
     <div class="hr-light"></div>
 
     <!-- Article 4 -->
@@ -477,11 +487,13 @@
     <ul class="list-unordered">
         <li>Use the SMS module to send spam, fraudulent information, phishing links, malicious code, or engage in harassment or extortion;</li>
         <li>Use the network module to conduct illegal intrusions (port scanning, vulnerability detection, SQL injection, XSS attacks), data theft, DDoS attacks, or distribute malware;</li>
+        <li>Use the All Files Access Permission to access, modify, or delete files without proper authorization, or to circumvent security measures on the Device;</li>
         <li>Write, distribute, or run script programs violating Laws, including cracking tools, malicious code, or automated attack tools;</li>
         <li>Infringe others' Intellectual Property Rights, Trade Secrets, or personal rights;</li>
         <li>Interfere with the Application's normal operation, bypass security mechanisms, or discover or exploit security vulnerabilities;</li>
         <li>Conduct performance stress testing, automated crawling, or batch requests causing server overload;</li>
-        <li>Impersonate the Developer or official personnel to commit fraud or mislead others.</li>
+        <li>Impersonate the Developer or official personnel to commit fraud or mislead others;</li>
+        <li>Click on advertisements in an automated or fraudulent manner, or otherwise manipulate advertising metrics.</li>
     </ul>
 
     <div class="hr-light"></div>
@@ -500,13 +512,13 @@
     </ul>
 
     <h3 class="title-section">Technical Risks</h3>
-    <p class="text-body">The Developer assumes no responsibility for data loss, Device anomalies, performance degradation, or feature unavailability due to operating system differences, Device hardware limitations, Android customizations, carrier network policies, regional network environments, or Python script logical errors.</p>
+    <p class="text-body">The Developer assumes no responsibility for data loss, Device anomalies, performance degradation, or feature unavailability due to operating system differences, Device hardware limitations, Android customizations, carrier network policies, regional network environments, Python script logical errors, or improper use of file management permissions.</p>
 
     <h3 class="title-section">Third‑Party Conduct</h3>
-    <p class="text-body">Third‑Party services invoked through the Application (including WeChat Share SDK and Third‑Party Libraries downloaded via QR code scanning) are the responsibility of such Third Parties. The Developer does not warrant the security, legality, reliability, or compatibility of Third‑Party services.</p>
+    <p class="text-body">Third‑Party services invoked through the Application (including WeChat Share SDK, Advertising SDK, and Third‑Party Libraries downloaded via QR code scanning) are the responsibility of such Third Parties. The Developer does not warrant the security, legality, reliability, or compatibility of Third‑Party services. <strong>The Developer assumes no responsibility for any damages or losses arising from your interaction with advertisements, including but not limited to misleading ad content, malware distributed through ads, or privacy breaches caused by the Advertising SDK.</strong></p>
 
     <h3 class="title-section">Permission Abuse and Script Behavior</h3>
-    <p class="text-body">You bear all consequences of programming behavior that causes Device charges, privacy leaks, data corruption, Device damage, or account theft. <strong>You bear full responsibility for the content, logic, security, compliance, and impact of the Python scripts you write or run.</strong></p>
+    <p class="text-body">You bear all consequences of programming behavior that causes Device charges, privacy leaks, data corruption, Device damage, or account theft. <strong>You bear full responsibility for the content, logic, security, compliance, and impact of the Python scripts you write or run.</strong> <strong>You bear full responsibility for any files accessed, modified, or deleted through the All Files Access Permission.</strong></p>
 
     <h3 class="title-section">User's Reading Obligation</h3>
     <p class="text-body">This Agreement is clearly displayed on the installation and first launch interface and accessible in the Application's settings. <strong>If you continue to use the Application without reading, understanding, or fully reading this Agreement, you bear all consequences. The Developer assumes no responsibility.</strong></p>
@@ -582,4 +594,4 @@
     <!-- 底部留白 -->
     <div style="height: 20px;"></div>
 </body>
-  </html>
+</html>
