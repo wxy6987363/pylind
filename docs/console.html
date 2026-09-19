@@ -3,33 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>客流量统计</title>
+  <title>客流量统计 · 条纹视图</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #f5f7fa;
       color: #1f2937;
-      min-height: 100vh;
-      padding: 32px 20px;
+      overflow: hidden;
     }
 
     .container {
-      max-width: 1100px;
-      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      padding: 28px;
+      height: 100%;
+      min-height: 0;
     }
 
     .top-stats {
       display: flex;
       flex-wrap: wrap;
       gap: 16px;
-      margin-bottom: 28px;
+      flex: none;
     }
 
     .stat-card {
@@ -56,6 +60,10 @@
     }
 
     .card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -63,6 +71,7 @@
     }
 
     .card-header {
+      flex: none;
       padding: 16px 20px;
       border-bottom: 1px solid #e5e7eb;
       font-weight: 600;
@@ -73,70 +82,176 @@
       align-items: center;
     }
 
-    .card-header .hint {
-      font-weight: 400;
-      font-size: 0.75rem;
-      color: #9ca3af;
-    }
-
     .demo-badge {
       display: none;
+      flex: none;
       padding: 12px 20px 0;
       font-size: 0.75rem;
       color: #d97706;
     }
+    .demo-badge.show { display: block; }
 
-    .demo-badge.show {
-      display: block;
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      border-radius: 20px;
+      padding: 3px;
+    }
+    .view-toggle button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 16px;
+      color: #6b7280;
+      transition: all 0.15s;
+    }
+    .view-toggle button svg { display: block; width: 18px; height: 18px; fill: currentColor; }
+    .view-toggle button.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .view-toggle button:hover:not(.active) { color: #374151; }
+
+    .view-container {
+      flex: 1;
+      min-height: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* 滚动容器：横向滚动 */
+    /* ---------- 图表视图 ---------- */
+    .chart-view {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+    }
+    .chart-view.active { display: flex; }
+
+    /* 图表整体：左 Y 轴固定 + 右滚动区 */
+    .chart-layout {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      position: relative;
+    }
+
+    /* 左侧固定 Y 轴区 */
+    .chart-y-axis {
+      flex: none;
+      width: 24px;               /* 给 Y 轴刻度预留固定宽度 */
+      position: relative;
+      overflow: hidden;
+      background: transparent;
+      border-right: 1px solid #f3f4f6;
+      z-index: 2;
+    }
+    .chart-y-axis canvas {
+      display: block;
+      position: absolute;
+      background: transparent;
+      top: 0;
+      left: 0;
+    }
+
+    /* 右侧滚动区（折线 + X 轴） */
     .chart-scroll {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
       overflow-x: auto;
       overflow-y: hidden;
-      padding: 20px;
+      position: relative;
       scrollbar-width: thin;
       scrollbar-color: #d1d5db transparent;
     }
+    .chart-scroll::-webkit-scrollbar { height: 8px; }
+    .chart-scroll::-webkit-scrollbar-track { background: transparent; }
+    .chart-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .chart-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    .chart-scroll canvas { display: block; }
 
-    .chart-scroll::-webkit-scrollbar {
-      height: 8px;
+    /* ---------- 列表视图 ---------- */
+    .list-view {
+      display: none;
+      flex: 1;
+      min-height: 0;
+    }
+    .list-view.active { display: flex; flex-direction: column; }
+
+    /* 列表整体：表头 + 滚动体 */
+    .striped-table {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #f0f2f5;
     }
 
-    .chart-scroll::-webkit-scrollbar-track {
-      background: transparent;
+    /* 表头固定 */
+    .striped-thead {
+      flex: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b7280;
+      background: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
     }
 
-    .chart-scroll::-webkit-scrollbar-thumb {
-      background: #d1d5db;
-      border-radius: 4px;
+    /* 表体可滚动 */
+    .striped-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      list-style: none;
+      scrollbar-width: thin;
+      scrollbar-color: #d1d5db transparent;
     }
+    .striped-list::-webkit-scrollbar { width: 8px; }
+    .striped-list::-webkit-scrollbar-track { background: transparent; }
+    .striped-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .striped-list::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-    .chart-scroll::-webkit-scrollbar-thumb:hover {
-      background: #9ca3af;
+    .striped-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      border-bottom: 1px solid #f0f2f5;
     }
+    .striped-list li:last-child { border-bottom: none; }
+    .striped-list li:nth-child(odd) { background-color: #f9fafb; }
+    .striped-list li:nth-child(even) { background-color: #ffffff; }
 
-    /* canvas 固定宽度，不随容器压缩 */
-    .chart-scroll canvas {
-      display: block;
-    }
+    .list-date { color: #4b5563; font-weight: 500; }
+    .list-count { font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; }
 
     @media (max-width: 600px) {
-      .stat-card {
-        flex: 1 1 calc(50% - 8px);
-      }
-      .stat-number {
-        font-size: 1.5rem;
-      }
-      body {
-        padding: 20px 12px;
-      }
+      .stat-card { flex: 1 1 calc(50% - 8px); }
+      .stat-number { font-size: 1.5rem; }
+      .view-container { padding: 16px; }
+      .striped-list li { padding: 10px 12px; font-size: 0.85rem; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-
     <div class="top-stats">
       <div class="stat-card">
         <div class="stat-number" id="stat-today">0</div>
@@ -158,28 +273,65 @@
 
     <div class="card">
       <div class="card-header">
-        客流量图表
-        <span class="hint">最近 90 天 · 可横向滚动</span>
+        <span>客流量详情</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="view-toggle">
+            <button id="btnChart" class="active" aria-label="图表视图" title="图表视图">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+              </svg>
+            </button>
+            <button id="btnList" aria-label="列表视图" title="列表视图">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0 4h2v-2H3v2zm4 0h14v-2H7v2zm0-4h14v-2H7v2zm0-6h14V9H7v2zm0-6v2h14V5H7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="demo-badge" id="demoBadge">
         ⚠️ 数据获取失败，当前展示为示例数据
       </div>
-      <div class="chart-scroll" id="chartScroll">
-        <!-- width 会在 JS 中根据天数 × 每日宽度动态设置 -->
-        <canvas id="chart"></canvas>
+
+      <div class="view-container">
+        <!-- 图表视图 -->
+        <div id="chartView" class="chart-view active">
+          <div class="chart-layout">
+            <!-- 左侧固定 Y 轴 -->
+            <div class="chart-y-axis" id="chartYAxis">
+              <canvas id="yAxisCanvas"></canvas>
+            </div>
+            <!-- 右侧滚动区域 -->
+            <div class="chart-scroll" id="chartScroll">
+              <canvas id="chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div id="listView" class="list-view">
+          <div class="striped-table">
+            <div class="striped-thead">
+              <span>日期</span>
+              <span>客流量</span>
+            </div>
+            <ul class="striped-list" id="stripedList"></ul>
+          </div>
+        </div>
       </div>
     </div>
-
   </div>
 
   <script>
     const API_URL = '/api/visits';
     const CHART_DAYS = 90;
-    const DAY_WIDTH = 40;       // 每天占据的固定宽度（px）
-    const CHART_HEIGHT = 300;   // 图表高度（px）
-    let chartInstance = null;
+    const DAY_WIDTH = 40;
+    const Y_AXIS_WIDTH = 56; // 与 .chart-y-axis 的 width 保持一致
 
-    // 格式化数字：1234 -> 1.2K, 1234567 -> 1.2M
+    let chartInstance = null;  // 主图（折线 + X 轴）
+    let yAxisInstance = null;  // 左侧固定 Y 轴图
+    let chartDataCache = null;
+
     function formatNumber(n) {
       if (n === null || n === undefined || isNaN(n)) return '0';
       if (n >= 1_000_000) {
@@ -242,7 +394,6 @@
       document.getElementById('stat-total').textContent = formatNumber(stats.total);
     }
 
-    // 生成模拟数据（带波动和缓慢增长）
     function mockData() {
       const today = new Date();
       const dates = [];
@@ -269,21 +420,50 @@
       };
     }
 
-    function renderChart({ dates, values }) {
-      const canvas = document.getElementById('chart');
+    // 列表渲染
+    function renderList(dates, values) {
+      const listEl = document.getElementById('stripedList');
+      const items = dates.map((date, i) => {
+        const count = values[i] || 0;
+        return `<li>
+          <span class="list-date">${date}</span>
+          <span class="list-count">${formatNumber(count)}</span>
+        </li>`;
+      }).join('');
+      listEl.innerHTML = items;
+    }
 
-      // 关键：canvas 宽度 = 天数 × 每日固定宽度
+    // 计算图表高度（左右两块共用）
+    function getChartHeight() {
+      const scroller = document.getElementById('chartScroll');
+      const h = scroller && scroller.clientHeight ? scroller.clientHeight : 300;
+      return Math.max(h, 120);
+    }
+
+    // 统一 Y 轴范围（左右两个图保持一致）
+    function getYRange(values) {
+      const max = Math.max(...values, 1);
+      // 向上取整到合适的步长，保证左右刻度一致
+      const step = Math.pow(10, Math.floor(Math.log10(max / 5)));
+      const niceMax = Math.ceil(max / (step * 5)) * (step * 5);
+      return { min: 0, max: niceMax };
+    }
+
+    // 主图：折线 + X 轴，Y 轴隐藏（用左侧固定 canvas 代替）
+    function renderMainChart({ dates, values }, yRange) {
+      const canvas = document.getElementById('chart');
       const width = dates.length * DAY_WIDTH;
+      const height = getChartHeight();
+
       canvas.width = width;
-      canvas.height = CHART_HEIGHT;
+      canvas.height = height;
       canvas.style.width = width + 'px';
-      canvas.style.height = CHART_HEIGHT + 'px';
+      canvas.style.height = height + 'px';
 
       const ctx = canvas.getContext('2d');
       if (chartInstance) chartInstance.destroy();
 
-      // 渐变填充
-      const gradient = ctx.createLinearGradient(0, 0, 0, CHART_HEIGHT);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
       gradient.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
       gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
@@ -310,16 +490,14 @@
           }],
         },
         options: {
-          // 关键：关闭响应式，让 canvas 按固定尺寸渲染
           responsive: false,
           maintainAspectRatio: false,
-          animation: {
-            duration: 600,
+          animation: { duration: 600 },
+          layout: {
+            // 给左侧留一点 padding，让折线起始不贴边
+            padding: { left: 4, right: 8, top: 8, bottom: 0 },
           },
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
+          interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -342,7 +520,7 @@
                 color: '#9ca3af',
                 font: { size: 10 },
                 maxRotation: 0,
-                autoSkip: false,        // 每天一个刻度，不自动跳过
+                autoSkip: false,
                 callback: function (value) {
                   const label = this.getLabelForValue(value);
                   return label.slice(5); // MM-DD
@@ -350,13 +528,84 @@
               },
             },
             y: {
+              // 主图隐藏 Y 轴，左侧用独立 canvas 画
+              display: false,
               beginAtZero: true,
-              grid: { color: '#f3f4f6' },
+              min: yRange.min,
+              max: yRange.max,
+            },
+          },
+        },
+      });
+    }
+
+    // 左侧固定 Y 轴图：只画 Y 轴刻度 + 网格线
+    function renderYAxis(yRange) {
+      const canvas = document.getElementById('yAxisCanvas');
+      const wrapper = document.getElementById('chartYAxis');
+      const width = wrapper.clientWidth || Y_AXIS_WIDTH;
+      const height = getChartHeight();
+
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+
+      const ctx = canvas.getContext('2d');
+      if (yAxisInstance) yAxisInstance.destroy();
+
+      yAxisInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [''],
+          datasets: [{
+            data: [null],
+            borderColor: 'transparent',
+          }],
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: {
+            // 与主图保持一致：顶部 padding 8，底部 0
+            padding: { top: 8, bottom: 0, left: 0, right: 0 },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+          },
+          scales: {
+            x: {
+              display: false,
+              min: 0,
+              max: 1,
+            },
+            y: {
+              position: 'left',
+              beginAtZero: true,
+              min: yRange.min,
+              max: yRange.max,
               border: { display: false },
+              grid: {
+                color: '#f3f4f6',
+                drawTicks: false,
+                // 网格线只画在 canvas 内部，不到达右侧
+                tickLength: 0,
+              },
               ticks: {
                 color: '#9ca3af',
                 font: { size: 10 },
+                padding: 6,
+                align: 'right',
+                crossAlign: 'far',
                 callback: (v) => formatNumber(v),
+                // 只显示几个刻度，避免太密
+                maxTicksLimit: 6,
+              },
+              afterFit: (scale) => {
+                // 让 scale 宽度占满整个 canvas
+                scale.width = width;
               },
             },
           },
@@ -368,13 +617,60 @@
       document.getElementById('demoBadge').classList.toggle('show', show);
     }
 
-    // 滚动到最右侧（最新日期）
     function scrollToEnd() {
       const scroller = document.getElementById('chartScroll');
-      requestAnimationFrame(() => {
-        scroller.scrollLeft = scroller.scrollWidth;
+      if (scroller) {
+        requestAnimationFrame(() => {
+          scroller.scrollLeft = scroller.scrollWidth;
+        });
+      }
+    }
+
+    function initViewToggle() {
+      const btnChart = document.getElementById('btnChart');
+      const btnList = document.getElementById('btnList');
+      const chartView = document.getElementById('chartView');
+      const listView = document.getElementById('listView');
+
+      btnChart.addEventListener('click', () => {
+        btnChart.classList.add('active');
+        btnList.classList.remove('active');
+        chartView.classList.add('active');
+        listView.classList.remove('active');
+
+        setTimeout(() => {
+          if (chartDataCache) {
+            const yRange = getYRange(chartDataCache.values);
+            renderMainChart(chartDataCache, yRange);
+            renderYAxis(yRange);
+            scrollToEnd();
+          }
+        }, 30);
+      });
+
+      btnList.addEventListener('click', () => {
+        btnList.classList.add('active');
+        btnChart.classList.remove('active');
+        listView.classList.add('active');
+        chartView.classList.remove('active');
       });
     }
+
+    // 滚动时不需要额外处理，因为 Y 轴是独立 canvas，天然固定
+
+    // 窗口尺寸变化时重绘
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (chartDataCache && document.getElementById('chartView').classList.contains('active')) {
+          const yRange = getYRange(chartDataCache.values);
+          renderMainChart(chartDataCache, yRange);
+          renderYAxis(yRange);
+          scrollToEnd();
+        }
+      }, 150);
+    });
 
     async function init() {
       let stats, chartData, isDemo = false;
@@ -382,10 +678,7 @@
       try {
         const data = await fetchVisits();
         const results = data.results || [];
-
-        if (!results.length) {
-          throw new Error('无数据');
-        }
+        if (!results.length) throw new Error('无数据');
 
         const map = new Map(results.map(r => [r.date, r.count]));
         const today = new Date().toISOString().slice(0, 10);
@@ -403,9 +696,18 @@
       }
 
       updateStats(stats);
-      renderChart(chartData);
+      renderList(chartData.dates, chartData.values);
       setDemoBadge(isDemo);
-      scrollToEnd();
+      initViewToggle();
+
+      chartDataCache = chartData;
+
+      requestAnimationFrame(() => {
+        const yRange = getYRange(chartData.values);
+        renderMainChart(chartData, yRange);
+        renderYAxis(yRange);
+        scrollToEnd();
+      });
     }
 
     init();
