@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Pylind</title>
+
+		<!-- 1. 先加载 Monaco 的 CSS（包含字体定义） -->
+		<link rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/editor/editor.main.min.css">
+
+		<!-- 2. 手动补上字体文件路径（关键！） -->
+		<style>
+			@font-face {
+				font-family: 'codicon';
+				src: url('https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/base/browser/ui/codicons/codicon/codicon.ttf') format('truetype');
+				font-weight: normal;
+				font-style: normal;
+			}
+
+			/* 确保图标类使用正确的字体 */
+			.codicon {
+				font-family: 'codicon' !important;
+			}
+
+			/* 关闭按钮颜色修复 */
+			.monaco-find-widget .monaco-button {
+				color: #cccccc !important;
+				opacity: 1 !important;
+			}
+		</style>
+
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.min.css" />
+		<link rel="stylesheet" href="css/main.css" />
+	</head>
+	<body>
+		<!-- 文件列表视图 -->
+		<div id="file-list-view">
+			<div class="header">
+				<h2>Projects</h2>
+				<div class="actions">
+					<button id="pypi-btn" title="PyPI">
+						<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path d="M24 4L4 14L24 24L44 14L24 4Z" stroke="currentColor" stroke-width="4"
+								stroke-linejoin="round" />
+							<path d="M4 34L24 44L44 34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M4 24L24 34L44 24" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+						</svg>
+					</button>
+					<button id="about-btn" title="About">
+						<svg viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path
+								d="M10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z"
+								fill="currentColor" />
+							<path
+								d="M24 14C26.2091 14 28 12.2091 28 10C28 7.79086 26.2091 6 24 6C21.7909 6 20 7.79086 20 10C20 12.2091 21.7909 14 24 14Z"
+								fill="currentColor" />
+							<path
+								d="M38 14C40.2091 14 42 12.2091 42 10C42 7.79086 40.2091 6 38 6C35.7909 6 34 7.79086 34 10C34 12.2091 35.7909 14 38 14Z"
+								fill="currentColor" />
+							<path
+								d="M10 28C12.2091 28 14 26.2091 14 24C14 21.7909 12.2091 20 10 20C7.79086 20 6 21.7909 6 24C6 26.2091 7.79086 28 10 28Z"
+								fill="currentColor" />
+							<path
+								d="M24 28C26.2091 28 28 26.2091 28 24C28 21.7909 26.2091 20 24 20C21.7909 20 20 21.7909 20 24C20 26.2091 21.7909 28 24 28Z"
+								fill="currentColor" />
+							<path
+								d="M38 28C40.2091 28 42 26.2091 42 24C42 21.7909 40.2091 20 38 20C35.7909 20 34 21.7909 34 24C34 26.2091 35.7909 28 38 28Z"
+								fill="currentColor" />
+							<path
+								d="M10 42C12.2091 42 14 40.2091 14 38C14 35.7909 12.2091 34 10 34C7.79086 34 6 35.7909 6 38C6 40.2091 7.79086 42 10 42Z"
+								fill="currentColor" />
+							<path
+								d="M24 42C26.2091 42 28 40.2091 28 38C28 35.7909 26.2091 34 24 34C21.7909 34 20 35.7909 20 38C20 40.2091 21.7909 42 24 42Z"
+								fill="currentColor" />
+							<path
+								d="M38 42C40.2091 42 42 40.2091 42 38C42 35.7909 40.2091 34 38 34C35.7909 34 34 35.7909 34 38C34 40.2091 35.7909 42 38 42Z"
+								fill="currentColor" />
+						</svg>
+					</button>
+					<button id="import-file-btn" title="Upload Project">
+						<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path
+								d="M24 43.9998H10C8.89543 43.9998 8 43.1043 8 41.9998V5.99976C8 4.89519 8.89543 3.99976 10 3.99976H38C39.1046 3.99976 40 4.89519 40 5.99976V23.9998"
+								stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+							<path d="M35.5 43.9998V30.9998" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+							<path d="M31 34.4998L32.5 32.9998L35.5 29.9998L38.5 32.9998L40 34.4998"
+								stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+							<path d="M16 15.9998H32" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+							<path d="M16 23.9998H24" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+						</svg>
+					</button>
+				</div>
+			</div>
+			<button id="new-file-btn" title="New Project">
+				<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M24.0605 10L24.0239 38" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+						stroke-linejoin="round" />
+					<path d="M10 24L38 24" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+						stroke-linejoin="round" />
+				</svg>
+			</button>
+			<div class="file-grid" id="file-grid"></div>
+		</div>
+
+		<!-- 关于视图 -->
+		<div id="about-view">
+			<div class="topbar">
+				<div class="topbar-row">
+					<button class="back-btn">
+						<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<h2>About</h2>
+				</div>
+			</div>
+
+			<div class="about-content">
+				<div class='about-icon' id='about-icon'>
+					<img src="res/1024.png" />
+					<div>Pylind</div>
+				</div>
+				<div id="share-btn" class="about-list-btn" title="Share App">
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M35 16C37.7614 16 40 13.7614 40 11C40 8.23858 37.7614 6 35 6C32.2386 6 30 8.23858 30 11C30 13.7614 32.2386 16 35 16Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						<path
+							d="M13 29C15.7614 29 18 26.7614 18 24C18 21.2386 15.7614 19 13 19C10.2386 19 8 21.2386 8 24C8 26.7614 10.2386 29 13 29Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						<path d="M30.0004 13.5745L17.3393 21.2454" stroke="currentColor" stroke-width="4"
+							stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M17.3385 26.5639L30.6789 34.4469" stroke="currentColor" stroke-width="4"
+							stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M35 32C37.7614 32 40 34.2386 40 37C40 39.7614 37.7614 42 35 42C32.2386 42 30 39.7614 30 37C30 34.2386 32.2386 32 35 32Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+					</svg>
+					<span>Share</span>
+				</div>
+				<div id="update-btn" class="about-list-btn" title="Update App">
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path
+							d="M33.5424 27C32.2681 31.0571 28.4778 34 24.0002 34C19.5226 34 15.7323 31.0571 14.458 27V33"
+							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M33.5424 15V21C32.2681 16.9429 28.4778 14 24.0002 14C19.5226 14 15.7323 16.9429 14.458 21"
+							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+					<span>Check Update</span>
+				</div>
+				<div id="donate-btn" class="about-list-btn" title="Donate Us">
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M27.6002 18.5998V11.3998C27.6002 8.41743 25.1826 5.99977 22.2002 5.99977L15.0002 22.1998V41.9998H35.9162C37.7113 42.0201 39.2471 40.7147 39.5162 38.9398L42.0002 22.7398C42.1587 21.6955 41.8506 20.6343 41.1576 19.8373C40.4645 19.0403 39.4564 18.5878 38.4002 18.5998H27.6002Z"
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						<path
+							d="M15 22.0001H10.194C8.08532 21.9628 6.2827 23.7095 6 25.7994V38.3994C6.2827 40.4894 8.08532 42.0367 10.194 41.9994H15V22.0001Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+					</svg>
+					<span>Donate Us</span>
+				</div>
+				<div class='contact'>
+					<div>Contact the Developer</div>
+					<div class="btn-group">
+						<div id="email-btn" title="Contact the developer">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M44 24V9H24H4V24V39H24" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M44 34L30 34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M39 29L44 34L39 39" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M4 9L24 24L44 9" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+							<span>Email</span>
+						</div>
+						<div id="weixin-btn" title="Contact the developer">
+							<svg viewBox="0 0 48 48" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path fill-rule="evenodd" clip-rule="evenodd"
+									d="M36.9974 21.7112C36.8434 13.0079 29.7401 6 21 6C12.1634 6 5 13.1634 5 22C5 26.1701 6.59531 29.9676 9.20892 32.8154L8.01043 40.0257L15.125 36.9699C18.2597 38.0122 21.218 38.2728 24 37.7516"
+									fill="none" />
+								<path
+									d="M36.9974 21.7112C36.8434 13.0079 29.7401 6 21 6C12.1634 6 5 13.1634 5 22C5 26.1701 6.59531 29.9676 9.20892 32.8154L8.01043 40.0257L15.125 36.9699C18.2597 38.0122 21.218 38.2728 24 37.7516"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M15.125 20.4667C16.3676 20.4667 17.375 19.4519 17.375 18.2C17.375 16.9482 16.3676 15.9333 15.125 15.9333C13.8824 15.9333 12.875 16.9482 12.875 18.2C12.875 19.4519 13.8824 20.4667 15.125 20.4667Z"
+									fill="currentColor" />
+								<path
+									d="M24.125 20.4667C25.3676 20.4667 26.375 19.4519 26.375 18.2C26.375 16.9482 25.3676 15.9333 24.125 15.9333C22.8824 15.9333 21.875 16.9482 21.875 18.2C21.875 19.4519 22.8824 20.4667 24.125 20.4667Z"
+									fill="currentColor" />
+								<path fill-rule="evenodd" clip-rule="evenodd"
+									d="M38.7618 39.9293C37.0135 41.2302 34.8467 42 32.5 42C26.701 42 22 37.299 22 31.5C22 25.701 26.701 21 32.5 21C38.299 21 43 25.701 43 31.5C43 33.0997 42.6423 34.6159 42.0024 35.9728"
+									fill="none" />
+								<path
+									d="M38.7618 39.9293C37.0135 41.2302 34.8467 42 32.5 42C26.701 42 22 37.299 22 31.5C22 25.701 26.701 21 32.5 21C38.299 21 43 25.701 43 31.5C43 33.0997 42.6423 34.6159 42.0024 35.9728"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path fill-rule="evenodd" clip-rule="evenodd" d="M42.0024 35.9728L43 42L38.7618 39.9293"
+									fill="none" />
+								<path d="M42.0024 35.9728L43 42L38.7618 39.9293" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path
+									d="M35.6875 30.7999C34.7555 30.7999 34 30.0388 34 29.0999C34 28.161 34.7555 27.3999 35.6875 27.3999C36.6195 27.3999 37.375 28.161 37.375 29.0999C37.375 30.0388 36.6195 30.7999 35.6875 30.7999Z"
+									fill="currentColor" />
+								<path
+									d="M28.9375 30.7999C28.0055 30.7999 27.25 30.0388 27.25 29.0999C27.25 28.161 28.0055 27.3999 28.9375 27.3999C29.8695 27.3999 30.625 28.161 30.625 29.0999C30.625 30.0388 29.8695 30.7999 28.9375 30.7999Z"
+									fill="currentColor" />
+							</svg>
+							<span>Weixin</span>
+						</div>
+						<div id="qq-btn" title="Contact the developer">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M23.7927 44.5178C20.1344 44.5178 16.7762 43.2933 14.6142 41.4646C13.5161 41.7927 12.1115 42.3204 11.2254 42.9751C10.4664 43.535 10.5613 44.1059 10.6979 44.3362C11.298 45.3491 20.9938 44.9831 23.7927 44.6678V44.5178ZM23.7927 44.5178C27.4516 44.5178 30.8095 43.2933 32.9718 41.4646C34.0693 41.7927 35.4742 42.3204 36.3606 42.9751C37.119 43.535 37.0244 44.1059 36.8875 44.3362C36.2874 45.3491 26.5919 44.9831 23.7927 44.6678V44.5178Z"
+									fill="currentColor" />
+								<path fill-rule="evenodd" clip-rule="evenodd"
+									d="M36.3386 20.9326C34.6979 21.3809 29.856 22.5505 23.8144 22.5914H23.7698C17.5753 22.5491 12.6423 21.3214 11.1274 20.8999C10.816 20.8129 10.6458 20.6334 10.6458 20.6334C10.644 20.5785 10.6207 19.6503 10.6207 19.171C10.6207 11.1055 14.4284 3.00029 23.7922 3C33.1561 3.00029 36.9635 11.1052 36.9635 19.1713C36.9635 19.65 36.9402 20.5785 36.9387 20.6337C36.9387 20.6337 36.7297 20.8255 36.3386 20.9326ZM38.8284 25.3504C39.3462 26.7001 39.8573 28.1055 40.2318 29.3107C42.0176 35.0578 41.4388 37.4364 40.9986 37.4898C40.0532 37.6039 37.3187 33.1634 37.3187 33.1634C37.3187 37.6757 33.2448 44.604 23.916 44.6677H23.6685C14.3394 44.604 10.2655 37.6757 10.2655 33.1634C10.2655 33.1634 7.53131 37.6039 6.58588 37.4895C6.14542 37.4364 5.5666 35.0581 7.35268 29.3107C7.72717 28.1058 8.23827 26.7001 8.75609 25.3504C8.75609 25.3504 9.10519 25.3285 9.28207 25.3795C10.7319 25.798 12.2762 26.1689 13.8447 26.4792C13.5776 28.1343 13.4249 30.1827 13.5692 32.6021C13.9533 39.0363 17.7745 43.081 23.6727 43.1394H23.9121C29.8106 43.081 33.6314 39.0363 34.0161 32.6021C34.1604 30.1823 34.0075 28.1345 33.7402 26.4793C35.3363 26.1633 36.9076 25.7848 38.3798 25.3571C38.5307 25.3136 38.8284 25.3504 38.8284 25.3504ZM33.7402 26.4793C30.3004 27.1601 26.7448 27.5502 23.8144 27.5147H23.7698C20.8396 27.5498 17.2841 27.1598 13.8447 26.4792C13.8586 26.3929 13.8728 26.3076 13.8874 26.2234C17.3136 26.8989 20.8513 27.2853 23.769 27.2503H23.8137L23.814 27.25C26.7323 27.2856 30.2709 26.8989 33.6974 26.2231C33.712 26.3074 33.7262 26.3928 33.7402 26.4793ZM18.0376 11.6868C18.1059 13.5266 19.1912 14.9735 20.4615 14.916C21.7309 14.8594 22.7044 13.3208 22.6349 11.4802C22.566 9.6398 21.4811 8.19348 20.2122 8.2504C18.9419 8.30791 17.9687 9.84646 18.0376 11.6868ZM27.1253 14.916C28.3957 14.9735 29.4809 13.5263 29.5489 11.6868C29.6181 9.84646 28.6449 8.30791 27.3746 8.2504C26.1055 8.19378 25.0208 9.64009 24.9519 11.4805C24.8825 13.3208 25.8556 14.8591 27.1253 14.916ZM23.8148 15.9248C28.0469 15.9248 31.4658 16.7625 31.805 17.5141V17.5144C31.821 17.5477 31.8295 17.5841 31.8298 17.621C31.8294 17.6731 31.8131 17.7238 31.7831 17.7663C31.497 18.1835 27.701 20.2436 23.8148 20.2436H23.7692C19.8827 20.2436 16.0867 18.1829 15.8006 17.7663C15.7708 17.7239 15.7545 17.6734 15.7539 17.6216C15.7542 17.5845 15.7627 17.5479 15.7787 17.5144C16.1182 16.7625 19.5368 15.9248 23.7692 15.9248H23.8148Z"
+									fill="currentColor" />
+								<path
+									d="M22.0218 11.7142C22.0799 12.441 21.6812 13.0867 21.1327 13.157C20.5831 13.2277 20.0912 12.6958 20.0329 11.969C19.9754 11.2416 20.3735 10.596 20.9211 10.5259C21.4716 10.4547 21.9643 10.9871 22.0218 11.7139V11.7142ZM25.5117 11.9571C25.624 11.7559 26.3885 10.6984 27.9714 11.0834C28.3874 11.1847 28.5797 11.3336 28.6203 11.392C28.6801 11.4784 28.6968 11.6015 28.6358 11.7673C28.5155 12.096 28.2671 12.087 28.1296 12.0227C28.0406 11.9813 26.9381 11.2463 25.9223 12.3429C25.8523 12.418 25.7274 12.4439 25.6091 12.3546C25.4903 12.2647 25.4416 12.0832 25.5117 11.9571Z"
+									fill="currentColor" />
+								<path
+									d="M15.5039 26.7117V33.0437C15.5039 33.0437 18.4044 33.6286 21.3105 33.2235V27.383C19.4695 27.2788 17.4841 27.0468 15.5039 26.7117Z"
+									fill="currentColor" />
+								<path
+									d="M36.9385 20.6337C36.9385 20.6337 31.2962 22.4148 23.8142 22.4653H23.7695C16.2998 22.4151 10.6648 20.6395 10.6456 20.6337L8.75586 25.35C13.4824 26.775 19.3401 27.6933 23.7695 27.6399H23.8142C28.2436 27.6933 34.101 26.775 38.8282 25.35L36.9385 20.6337Z"
+									fill="currentColor" />
+							</svg>
+							<span>QQ</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- PyPI包管理视图 -->
+		<div id="pypi-view">
+			<div class="topbar">
+				<div class="topbar-row">
+					<button class="back-btn">
+						<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<div class="title"><span>PyPI Package Manager</span></div>
+				</div>
+			</div>
+			<div class="pypi-search">
+				<input type="text" id="package-search" placeholder="Enter the name to search (e.g. numpy, pandas)" />
+				<button id="search-package-btn">
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M21 38C30.3888 38 38 30.3888 38 21C38 11.6112 30.3888 4 21 4C11.6112 4 4 11.6112 4 21C4 30.3888 11.6112 38 21 38Z"
+							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						<path
+							d="M26.657 14.3431C25.2093 12.8954 23.2093 12 21.0001 12C18.791 12 16.791 12.8954 15.3433 14.3431"
+							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M33.2216 33.2217L41.7069 41.707" stroke="currentColor" stroke-width="4"
+							stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</button>
+				<button id="barcode-btn">
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M6 15V6H15" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M15 42H6V33" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M42 33V42H33" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M33 6H42V15" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M10 24H38" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+					</svg>
+				</button>
+			</div>
+			<div class="pypi-results" id="pypi-results"></div>
+			<div class="installed-packages">
+				<h3>Installed Packages</h3>
+				<div id="installed-packages-list"></div>
+			</div>
+		</div>
+
+		<!-- 编辑器视图 -->
+		<div id="edit-view">
+			<div class="topbar">
+				<!-- 第一行：按钮 + 标题 + 操作按钮 -->
+				<div class="topbar-row">
+					<button class="back-btn">
+						<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<button id="drawer-toggle-btn" title="Project Files">
+						<svg viewBox="0 0 48 48" fill="none"
+							xmlns="http://www.w3.org/2000/svg">
+							<path
+								d="M4 8C4 6.89543 4.89543 6 6 6H18L22 10H42C43.1046 10 44 10.8954 44 12V40C44 41.1046 43.1046 42 42 42H6C4.89543 42 4 41.1046 4 40V8Z"
+								stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<div class="title"><span id="editor-title">No file opened</span></div>
+					<div class="btn-group">
+						<button id="save-btn" title="Save">
+							<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M6 9C6 7.34315 7.34315 6 9 6H34.2814L42 13.2065V39C42 40.6569 40.6569 42 39 42H9C7.34315 42 6 40.6569 6 39V9Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+								<path fill-rule="evenodd" clip-rule="evenodd"
+									d="M24.0083 6L24 13.3846C24 13.7245 23.5523 14 23 14H15C14.4477 14 14 13.7245 14 13.3846L14 6"
+									fill="none" />
+								<path
+									d="M24.0083 6L24 13.3846C24 13.7245 23.5523 14 23 14H15C14.4477 14 14 13.7245 14 13.3846L14 6H24.0083Z"
+									stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+								<path d="M9 6H34.2814" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M14 26H34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M14 34H24.0083" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button class="run-btn" id="run-btn" title="Run">
+							<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path fill-rule="evenodd" clip-rule="evenodd"
+									d="M41.0103 25.7308C42.3409 24.9605 42.3409 23.0395 41.0103 22.2691L9.00212 3.73804C7.66866 2.96611 6 3.92823 6 5.4689V42.5311C6 44.0718 7.66866 45.0339 9.00212 44.262L41.0103 25.7308Z"
+									fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+						</button>
+					</div>
+				</div>
+				<!-- 第二行：选项卡 -->
+				<div class="tabs-row tabs-container" id="tabs-container">
+					<div class="tabs-scroll" id="tabs-scroll">
+						<span class="no-tabs">No files opened</span>
+					</div>
+				</div>
+			</div>
+			<div class="editor-wrapper">
+				<div id="drawer-overlay" class="drawer-overlay">
+					<div id="file-drawer" class="file-drawer">
+						<div class="drawer-header">
+							<span class="drawer-title"><span id="drawer-project-name">Project</span></span>
+						</div>
+						<div class="drawer-toolbar">
+							<button id="drawer-new-file-btn" title="New File">
+								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M40 23V14L31 4H10C8.89543 4 8 4.89543 8 6V42C8 43.1046 8.89543 44 10 44H22"
+										stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+									<path d="M33 29V43" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+									<path d="M26 36H33H40" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+									<path d="M30 4V14H40" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+								</svg>
+							</button>
+							<button id="drawer-import-file-btn" title="Import Files">
+								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<mask id="icon-83f6f557f10b972" maskUnits="userSpaceOnUse" x="0" y="0" width="48"
+										height="48" style="mask-type: alpha">
+										<path d="M48 0H0V48H48V0Z" fill="currentColor" />
+									</mask>
+									<g mask="url(#icon-83f6f557f10b972)">
+										<path d="M6 24.0083V42H42V24" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M33 15L24 6L15 15" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M23.9917 32V6" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</g>
+								</svg>
+							</button>
+							<button id="drawer-new-folder-btn" title="New Folder">
+								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path
+										d="M4 8C4 6.89543 4.89543 6 6 6H18L22 10H42C43.1046 10 44 10.8954 44 12V40C44 41.1046 43.1046 42 42 42H6C4.89543 42 4 41.1046 4 40V8Z"
+										stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+									<path d="M24 18V34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+									<path d="M17 26H31" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+										stroke-linejoin="round" />
+								</svg>
+							</button>
+						</div>
+						<div id="drawer-file-list"></div>
+					</div>
+				</div>
+				<div id="code-area">
+					<div class="toolbar" id="toolbar">
+						<button class="toolbar-btn" data-action="tab">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M42 9H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M29 19H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M29 29H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M37 19L42 24L37 29" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M42 39H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button class="toolbar-btn" data-action="find">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M21 38C30.3888 38 38 30.3888 38 21C38 11.6112 30.3888 4 21 4C11.6112 4 4 11.6112 4 21C4 30.3888 11.6112 38 21 38Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+								<path
+									d="M26.657 14.3431C25.2093 12.8954 23.2093 12 21.0001 12C18.791 12 16.791 12.8954 15.3433 14.3431"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M33.2216 33.2217L41.7069 41.707" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button class="toolbar-btn" data-action="replace">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M42 19H5.99998" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M30 7L42 19" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M6.79897 29H42.799" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M6.79895 29L18.799 41" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button class="toolbar-btn" data-action="undo">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M11.2721 36.7279C14.5294 39.9853 19.0294 42 24 42C33.9411 42 42 33.9411 42 24C42 14.0589 33.9411 6 24 6C19.0294 6 14.5294 8.01472 11.2721 11.2721C9.61407 12.9301 6 17 6 17"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M6 9V17H14" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>️
+						</button>
+						<button class="toolbar-btn" data-action="redo">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M36.7279 36.7279C33.4706 39.9853 28.9706 42 24 42C14.0589 42 6 33.9411 6 24C6 14.0589 14.0589 6 24 6C28.9706 6 33.4706 8.01472 36.7279 11.2721C38.3859 12.9301 42 17 42 17"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M42 8V17H33" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>️
+						</button>
+						<button class="toolbar-btn" data-action="format">
+							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<rect x="8" y="24" width="32" height="18" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M4 13H18V6H30V13H44V24H4V13Z" fill="none" stroke="currentColor"
+									stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M16 32L16 42" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+							</svg>
+						</button>
+						<button class="toolbar-btn" data-action="ai">
+							<svg viewBox="0 0 48 48" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M23.9999 24V12M23.9999 24L13.5 30.0621L23.9999 24ZM23.9999 24L34.4998 30.0621L23.9999 24Z"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M14 16C14 18.2091 12.2091 20 10 20C7.79086 20 6 18.2091 6 16C6 13.7909 7.79086 12 10 12C12.2091 12 14 13.7909 14 16Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M14 32C14 34.2091 12.2091 36 10 36C7.79086 36 6 34.2091 6 32C6 29.7909 7.79086 28 10 28C12.2091 28 14 29.7909 14 32Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M28 40C28 42.2091 26.2091 44 24 44C21.7909 44 20 42.2091 20 40C20 37.7909 21.7909 36 24 36C26.2091 36 28 37.7909 28 40Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M42 32C42 34.2091 40.2091 36 38 36C35.7909 36 34 34.2091 34 32C34 29.7909 35.7909 28 38 28C40.2091 28 42 29.7909 42 32Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M42 16C42 18.2091 40.2091 20 38 20C35.7909 20 34 18.2091 34 16C34 13.7909 35.7909 12 38 12C40.2091 12 42 13.7909 42 16Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path
+									d="M28 8C28 10.2091 26.2091 12 24 12C21.7909 12 20 10.2091 20 8C20 5.79086 21.7909 4 24 4C26.2091 4 28 5.79086 28 8Z"
+									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+						</button>
+					</div>
+					<!-- AI 侧边栏 -->
+					<div id="ai-sidebar">
+						<div class="topbar">
+							<div class="topbar-row">
+								<div class="title"><span>AI Agent</span></div>
+								<div id="ai-credit-display" class='payai-btn'>
+									<svg viewBox="0 0 48 48" fill="none"
+										xmlns="http://www.w3.org/2000/svg">
+										<path fill-rule="evenodd" clip-rule="evenodd"
+											d="M24 10C25.6569 10 27 8.65685 27 7C27 5.34315 25.6569 4 24 4C22.3431 4 21 5.34315 21 7C21 8.65685 22.3431 10 24 10Z"
+											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path fill-rule="evenodd" clip-rule="evenodd"
+											d="M24 44C25.6569 44 27 42.6569 27 41C27 39.3431 25.6569 38 24 38C22.3431 38 21 39.3431 21 41C21 42.6569 22.3431 44 24 44Z"
+											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path fill-rule="evenodd" clip-rule="evenodd"
+											d="M7 27C8.65685 27 10 25.6569 10 24C10 22.3431 8.65685 21 7 21C5.34315 21 4 22.3431 4 24C4 25.6569 5.34315 27 7 27Z"
+											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path fill-rule="evenodd" clip-rule="evenodd"
+											d="M41 27C42.6569 27 44 25.6569 44 24C44 22.3431 42.6569 21 41 21C39.3431 21 38 22.3431 38 24C38 25.6569 39.3431 27 41 27Z"
+											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path
+											d="M24.1969 15.7438C27.2874 15.7438 30.0141 14.1861 31.6346 11.813C33.5162 12.9388 35.1205 14.4804 36.3205 16.3109C33.7298 17.891 32.0002 20.7436 32.0002 24.0001C32.0002 27.3429 33.8226 30.26 36.528 31.8121C35.4049 33.6294 33.8903 35.1793 32.102 36.3441C30.5754 33.5472 27.6077 31.6499 24.1969 31.6499C20.7969 31.6499 17.8373 33.5352 16.3064 36.3175C14.4779 35.1178 12.9379 33.5146 11.813 31.6345C14.1861 30.014 15.7438 27.2873 15.7438 24.1969C15.7438 21.1166 14.1964 18.3977 11.8365 16.7753C13.0547 14.7537 14.7538 13.0547 16.7753 11.8365C18.3977 14.1964 21.1166 15.7438 24.1969 15.7438Z"
+											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path
+											d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
+											stroke="currentColor" stroke-width="4" />
+									</svg>
+									<span id="credit-count">0</span>
+								</div>
+								<button class="close-btn" id="close-ai-sidebar">
+									<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+										xmlns="http://www.w3.org/2000/svg">
+										<path d="M8 8L40 40" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M8 40L40 8" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+							</div>
+						</div>
+						<div class="ai-messages" id="ai-messages"></div>
+						<div class="ai-presets" id="ai-presets">
+							<button class="preset-btn" data-prompt="Fix the bug in this code">Fix</button>
+							<button class="preset-btn" data-prompt="Explain what this code does">Explain</button>
+							<button class="preset-btn"
+								data-prompt="Optimize the performance of this code">Optimize</button>
+							<button class="preset-btn" data-prompt="Add comments to this code">Comment</button>
+						</div>
+						<div class="ai-input-area">
+							<textarea id="ai-input" placeholder="Enter your question..." rows="1"></textarea>
+							<button id="ai-send-btn">Send</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 终端覆盖层 -->
+			<div id="console-overlay">
+				<div class="topbar">
+					<div class="topbar-row">
+						<div class="title"><span>Debug Console</span></div>
+						<button class="close-btn" id="close-console-btn">
+							<svg width='1em' height='1em' viewBox="0 0 48 48" fill="none"
+								xmlns="http://www.w3.org/2000/svg">
+								<path d="M8 8L40 40" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+								<path d="M8 40L40 8" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke-linejoin="round" />
+							</svg>
+						</button>
+					</div>
+				</div>
+				<div id="terminal-container"></div>
+				<div id="layout-container"></div>
+			</div>
+		</div>
+
+		<script type='importmap'>
+			{
+				"imports": {
+					"pyodide": "https://pylind.pages.dev/res/pyodide/pyodide.mjs",
+					"monaco": "./js/monaco/dist/index.mjs",
+					"monaco/workers/editor": "./js/monaco/dist/workers/editor.mjs",
+					"monaco/workers/typescript": "./js/monaco/dist/workers/typescript.mjs",
+					"monaco-editor": "https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/+esm"
+				}
+			}
+		</script>
+		<script src="./js/payai.js"></script>
+		<script src="js/main.js" type="module"></script>
+	</body>
+</html>

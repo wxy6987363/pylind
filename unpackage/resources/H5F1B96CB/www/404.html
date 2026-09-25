@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<title>404 · 星际迷航</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+				user-select: none;
+			}
+
+			body {
+				background: #0a0e1a;
+				overflow: hidden;
+				height: 100vh;
+				width: 100vw;
+				font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+			}
+
+			#gameWrapper {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				background: radial-gradient(ellipse at 50% 60%, #111833, #03050b);
+				z-index: 1;
+			}
+
+			canvas {
+				display: block;
+				width: 100%;
+				height: 100%;
+				background: transparent;
+				touch-action: none;
+				cursor: pointer;
+			}
+
+			/* 悬浮 404 字样 */
+			.glitch-404 {
+				position: fixed;
+				top: 6%;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 20;
+				font-size: clamp(4rem, 15vw, 9rem);
+				font-weight: 900;
+				letter-spacing: 0.06em;
+				color: #f5e9c4;
+				text-shadow:
+					0 0 20px #fbbf24,
+					0 0 60px #f59e0b,
+					0 0 100px #b45309,
+					0 0 160px #7c2d12;
+				background: linear-gradient(135deg, #fde68a, #fcd34d, #fbbf24);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+				animation: floatGlow 4s ease-in-out infinite alternate;
+				pointer-events: none;
+				font-family: 'Segoe UI', system-ui, sans-serif;
+				text-align: center;
+				white-space: nowrap;
+			}
+
+			.mini-reset {
+				position: fixed;
+				bottom: 24px;
+				right: 24px;
+				z-index: 30;
+				background: rgba(20, 30, 50, 0.5);
+				backdrop-filter: blur(6px);
+				-webkit-backdrop-filter: blur(6px);
+				border: 1px solid rgba(255, 215, 0, 0.2);
+				color: #d4dcec;
+				padding: 10px 24px;
+				border-radius: 60px;
+				font-size: 1rem;
+				font-weight: 500;
+				letter-spacing: 0.5px;
+				cursor: pointer;
+				transition: 0.25s;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+				font-family: 'Segoe UI', sans-serif;
+				pointer-events: auto;
+			}
+
+			.mini-reset:hover {
+				background: rgba(251, 191, 36, 0.2);
+				border-color: #fbbf24;
+				color: #fde68a;
+				box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+				transform: scale(0.96);
+			}
+
+			.mini-reset:active {
+				transform: scale(0.92);
+			}
+
+			@media (max-width: 480px) {
+				.glitch-404 {
+					top: 4%;
+				}
+
+				.mini-reset {
+					bottom: 16px;
+					right: 16px;
+					padding: 6px 16px;
+					font-size: 0.8rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="glitch-404">404</div>
+		<div id="gameWrapper">
+			<canvas id="gameCanvas"></canvas>
+		</div>
+		<button class="mini-reset" id="resetBtn">⟳ 重启</button>
+
+		<script>
+			(function() {
+				const canvas = document.getElementById('gameCanvas');
+				const ctx = canvas.getContext('2d');
+
+				let W, H;
+
+				function resizeCanvas() {
+					const wrapper = document.getElementById('gameWrapper');
+					W = wrapper.clientWidth;
+					H = wrapper.clientHeight;
+					canvas.width = W;
+					canvas.height = H;
+				}
+				window.addEventListener('resize', resizeCanvas);
+				resizeCanvas();
+
+				// ----- 动态尺寸 -----
+				let paddleWidth, paddleHeight, paddleY;
+				let starRadius, moonRadius, bombRadius;
+				let starSpeed, bombSpeed, moonSpeed;
+
+				function calcSizes() {
+					const base = Math.min(W, H);
+					paddleWidth = Math.max(60, Math.min(160, W * 0.18));
+					paddleHeight = Math.max(12, Math.min(28, H * 0.035));
+					paddleY = H - paddleHeight - 20;
+
+					// 圆润的大尺寸
+					starRadius = Math.max(16, Math.min(34, base * 0.042));
+					moonRadius = Math.max(26, Math.min(54, base * 0.065));
+					bombRadius = Math.max(16, Math.min(34, base * 0.042));
+
+					// 快速下落
+					starSpeed = Math.max(1.0, Math.min(2.5, H * 0.0036));
+					moonSpeed = Math.max(0.8, Math.min(2.0, H * 0.0030));
+					bombSpeed = Math.max(1.2, Math.min(3.0, H * 0.0042));
+				}
+				calcSizes();
+				window.addEventListener('resize', () => {
+					resizeCanvas();
+					calcSizes();
+					paddleX = (W - paddleWidth) / 2;
+				});
+
+				// ----- 游戏状态 -----
+				let paddleX = (W - paddleWidth) / 2;
+				let score = 50;
+				let gameOver = false;
+				let stars = [];
+				let moons = [];
+				let bombs = [];
+				let frameCounter = 0;
+
+				let starSpawnInterval = 22;
+				let moonSpawnInterval = 70;
+				let bombSpawnInterval = 38;
+
+				// ----- 控制 -----
+				function handleMove(clientX) {
+					if (gameOver) return;
+					const rect = canvas.getBoundingClientRect();
+					const scaleX = canvas.width / rect.width;
+					const canvasX = (clientX - rect.left) * scaleX;
+					let newX = canvasX - paddleWidth / 2;
+					newX = Math.max(0, Math.min(newX, W - paddleWidth));
+					paddleX = newX;
+				}
+
+				canvas.addEventListener('mousemove', (e) => {
+					e.preventDefault();
+					handleMove(e.clientX);
+				});
+				canvas.addEventListener('touchmove', (e) => {
+					e.preventDefault();
+					const touch = e.touches[0];
+					if (touch) handleMove(touch.clientX);
+				}, {
+					passive: false
+				});
+				canvas.addEventListener('click', (e) => {
+					if (!gameOver) handleMove(e.clientX);
+				});
+				canvas.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					const touch = e.touches[0];
+					if (touch) handleMove(touch.clientX);
+				}, {
+					passive: false
+				});
+
+				document.addEventListener('keydown', (e) => {
+					if (gameOver) return;
+					const step = Math.max(14, paddleWidth * 0.28);
+					if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+						paddleX = Math.max(0, paddleX - step);
+						e.preventDefault();
+					} else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+						paddleX = Math.min(W - paddleWidth, paddleX + step);
+						e.preventDefault();
+					}
+				});
+
+				// ----- 绘制函数 (纯图形，无文字) -----
+				// 星星：圆润胖星星 (五角星，无文字)
+				function drawStar(cx, cy, r, color = '#fcd34d') {
+					const spikes = 5;
+					const outerR = r;
+					const innerR = r * 0.5;
+					ctx.save();
+					ctx.translate(cx, cy);
+					ctx.beginPath();
+					for (let i = 0; i < spikes * 2; i++) {
+						const radius = i % 2 === 0 ? outerR : innerR;
+						const angle = (i * Math.PI) / spikes - Math.PI / 2;
+						const x = radius * Math.cos(angle);
+						const y = radius * Math.sin(angle);
+						if (i === 0) ctx.moveTo(x, y);
+						else {
+							// 使用二次贝塞尔曲线绘制圆角连接
+							const prevIdx = (i - 1 + spikes * 2) % (spikes * 2);
+							const prevRadius = prevIdx % 2 === 0 ? outerR : innerR;
+							const prevAngle = (prevIdx * Math.PI) / spikes - Math.PI / 2;
+							const prevX = prevRadius * Math.cos(prevAngle);
+							const prevY = prevRadius * Math.sin(prevAngle);
+							// 计算控制点，使角变圆
+							const cpX = (prevX + x) / 2;
+							const cpY = (prevY + y) / 2;
+							ctx.quadraticCurveTo(cpX, cpY, x, y);
+						}
+					}
+					ctx.closePath();
+					ctx.fillStyle = color;
+					ctx.fill();
+					ctx.strokeStyle = color;
+					ctx.lineWidth = 2;
+					ctx.stroke();
+					ctx.restore();
+				}
+
+				// 月亮：弯月 (无文字)
+				function drawMoon(cx, cy, r, color = '#f5e9c4') {
+					ctx.save();
+					// 画主圆
+					ctx.beginPath();
+					ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+					ctx.fillStyle = color;
+					ctx.fill();
+					// 画遮罩圆，形成月牙
+					ctx.beginPath();
+					ctx.arc(cx + r * 0.3, cy - r * 0.1, r * 0.85, 0, 2 * Math.PI);
+					ctx.fillStyle = '#093d7d'; // 背景色，形成月牙
+					ctx.fill();
+					ctx.restore();
+				}
+
+				// 炸弹：黑色球体 + 引线火花 (无文字)
+				function drawBomb(cx, cy, r, color = '#1a1a1a') {
+					ctx.save();
+					// 炸弹球体
+					ctx.beginPath();
+					ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+					ctx.fillStyle = color;
+					ctx.fill();
+					// 引线
+					ctx.beginPath();
+					ctx.moveTo(cx + r * 0.15, cy - r * 0.7);
+					ctx.lineTo(cx + r * 0.45, cy - r * 1.2);
+					ctx.strokeStyle = '#2a2a2a';
+					ctx.lineWidth = 3;
+					ctx.stroke();
+					// 火花（大）
+					ctx.beginPath();
+					ctx.arc(cx + r * 0.45, cy - r * 1.2, r * 0.14, 0, 2 * Math.PI);
+					ctx.fillStyle = '#b91c1c';
+					ctx.fill();
+					// 火花（小，高亮）
+					ctx.beginPath();
+					ctx.arc(cx + r * 0.45, cy - r * 1.2, r * 0.07, 0, 2 * Math.PI);
+					ctx.fillStyle = '#ef4444';
+					ctx.fill();
+					ctx.restore();
+				}
+
+				// ----- 生成 -----
+				function spawnStar() {
+					const x = Math.random() * (W - 2 * starRadius) + starRadius;
+					stars.push({
+						x,
+						y: -starRadius,
+						radius: starRadius,
+						speed: starSpeed + (Math.random() * 0.8 - 0.4),
+						vx: (Math.random() - 0.5) * 1.0,
+					});
+				}
+
+				function spawnMoon() {
+					const x = Math.random() * (W - 2 * moonRadius) + moonRadius;
+					moons.push({
+						x,
+						y: -moonRadius,
+						radius: moonRadius,
+						speed: moonSpeed + (Math.random() * 0.6 - 0.3),
+						vx: (Math.random() - 0.5) * 0.6,
+					});
+				}
+
+				function spawnBomb() {
+					const x = Math.random() * (W - 2 * bombRadius) + bombRadius;
+					bombs.push({
+						x,
+						y: -bombRadius,
+						radius: bombRadius,
+						speed: bombSpeed + (Math.random() * 0.8 - 0.4),
+						vx: (Math.random() - 0.5) * 1.2,
+					});
+				}
+
+				// ----- 更新逻辑 -----
+				function update() {
+					if (gameOver) return;
+
+					frameCounter++;
+					const dynamicStar = Math.max(8, starSpawnInterval - Math.floor(score / 10));
+					const dynamicMoon = Math.max(30, moonSpawnInterval - Math.floor(score / 8));
+					const dynamicBomb = Math.max(14, bombSpawnInterval - Math.floor(score / 6));
+
+					if (frameCounter % dynamicStar === 0) spawnStar();
+					if (frameCounter % dynamicMoon === 0) spawnMoon();
+					if (frameCounter % dynamicBomb === 0) spawnBomb();
+
+					// 星星：+5分，掉下去没事
+					for (let i = stars.length - 1; i >= 0; i--) {
+						const s = stars[i];
+						s.y += s.speed;
+						s.x += s.vx || 0;
+						if (s.vx) {
+							s.vx *= 0.99;
+							if (Math.abs(s.vx) < 0.02) s.vx = 0;
+						}
+						if (s.x - s.radius < 0) {
+							s.x = s.radius;
+							s.vx = -s.vx;
+						}
+						if (s.x + s.radius > W) {
+							s.x = W - s.radius;
+							s.vx = -s.vx;
+						}
+
+						if (s.y + s.radius > paddleY && s.y - s.radius < paddleY + paddleHeight &&
+							s.x > paddleX && s.x < paddleX + paddleWidth) {
+							stars.splice(i, 1);
+							score += 5;
+							continue;
+						}
+						if (s.y - s.radius > H) {
+							stars.splice(i, 1);
+							continue;
+						}
+					}
+
+					// 月亮：+10分，掉下去没事
+					for (let i = moons.length - 1; i >= 0; i--) {
+						const m = moons[i];
+						m.y += m.speed;
+						m.x += m.vx || 0;
+						if (m.vx) {
+							m.vx *= 0.99;
+							if (Math.abs(m.vx) < 0.02) m.vx = 0;
+						}
+						if (m.x - m.radius < 0) {
+							m.x = m.radius;
+							m.vx = -m.vx;
+						}
+						if (m.x + m.radius > W) {
+							m.x = W - m.radius;
+							m.vx = -m.vx;
+						}
+
+						if (m.y + m.radius > paddleY && m.y - m.radius < paddleY + paddleHeight &&
+							m.x > paddleX && m.x < paddleX + paddleWidth) {
+							moons.splice(i, 1);
+							score += 10;
+							continue;
+						}
+						if (m.y - m.radius > H) {
+							moons.splice(i, 1);
+							continue;
+						}
+					}
+
+					// 炸弹：-15分，掉下去没事
+					for (let i = bombs.length - 1; i >= 0; i--) {
+						const b = bombs[i];
+						b.y += b.speed;
+						b.x += b.vx || 0;
+						if (b.vx) {
+							b.vx *= 0.99;
+							if (Math.abs(b.vx) < 0.02) b.vx = 0;
+						}
+						if (b.x - b.radius < 0) {
+							b.x = b.radius;
+							b.vx = -b.vx;
+						}
+						if (b.x + b.radius > W) {
+							b.x = W - b.radius;
+							b.vx = -b.vx;
+						}
+
+						if (b.y + b.radius > paddleY && b.y - b.radius < paddleY + paddleHeight &&
+							b.x > paddleX && b.x < paddleX + paddleWidth) {
+							bombs.splice(i, 1);
+							score -= 15;
+							if (score <= 0) {
+								score = 0;
+								gameOver = true;
+							}
+							continue;
+						}
+						if (b.y - b.radius > H) {
+							bombs.splice(i, 1);
+							continue;
+						}
+					}
+
+					if (score <= 0) {
+						score = 0;
+						gameOver = true;
+					}
+				}
+
+				// ----- 绘图 -----
+				function draw() {
+					ctx.clearRect(0, 0, W, H);
+					ctx.fillStyle = '#093d7d';
+					ctx.fillRect(0, 0, W, H);
+
+					for (const s of stars) drawStar(s.x, s.y, s.radius, '#fcd34d');
+					for (const m of moons) drawMoon(m.x, m.y, m.radius, '#f5e9c4');
+					for (const b of bombs) drawBomb(b.x, b.y, b.radius, '#1a1a1a');
+
+					// 挡板
+					ctx.shadowColor = '#fbbf24';
+					ctx.shadowBlur = 45;
+					ctx.fillStyle = '#cbd5e1';
+					ctx.beginPath();
+					ctx.roundRect(paddleX, paddleY, paddleWidth, paddleHeight, 20);
+					ctx.fill();
+					ctx.shadowBlur = 25;
+					ctx.strokeStyle = '#fbbf24';
+					ctx.lineWidth = 2.5;
+					ctx.beginPath();
+					ctx.roundRect(paddleX, paddleY, paddleWidth, paddleHeight, 20);
+					ctx.stroke();
+					ctx.shadowBlur = 0;
+
+					// 分数
+					ctx.font = `bold ${Math.min(W,H) * 0.045}px monospace`;
+					ctx.fillStyle = '#e2e8f0';
+					ctx.textAlign = 'left';
+					ctx.textBaseline = 'top';
+					ctx.shadowBlur = 18;
+					ctx.shadowColor = '#0b0f1a';
+					ctx.fillText(`⭐ ${score}`, 16, 14);
+					ctx.shadowBlur = 0;
+
+					if (gameOver) {
+						ctx.fillStyle = 'rgba(0,0,0,0.65)';
+						ctx.fillRect(0, 0, W, H);
+						ctx.font = `bold ${Math.min(W,H) * 0.08}px "Segoe UI", sans-serif`;
+						ctx.fillStyle = '#fcd34d';
+						ctx.shadowColor = '#f59e0b';
+						ctx.shadowBlur = 60;
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'middle';
+						ctx.fillText('星光熄灭', W / 2, H / 2 - 30);
+						ctx.font = `${Math.min(W,H) * 0.03}px sans-serif`;
+						ctx.fillStyle = '#e2e8f0';
+						ctx.shadowBlur = 25;
+						ctx.fillText('点击「重启」再次冒险', W / 2, H / 2 + 45);
+						ctx.shadowBlur = 0;
+					}
+				}
+
+				CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+					if (w < 2 * r) r = w / 2;
+					if (h < 2 * r) r = h / 2;
+					this.moveTo(x + r, y);
+					this.lineTo(x + w - r, y);
+					this.quadraticCurveTo(x + w, y, x + w, y + r);
+					this.lineTo(x + w, y + h - r);
+					this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+					this.lineTo(x + r, y + h);
+					this.quadraticCurveTo(x, y + h, x, y + h - r);
+					this.lineTo(x, y + r);
+					this.quadraticCurveTo(x, y, x + r, y);
+					this.closePath();
+					return this;
+				};
+
+				// ----- 循环 -----
+				function gameLoop() {
+					update();
+					draw();
+					requestAnimationFrame(gameLoop);
+				}
+
+				// ----- 重置 -----
+				function resetGame() {
+					gameOver = false;
+					score = 50;
+					stars = [];
+					moons = [];
+					bombs = [];
+					frameCounter = 0;
+					paddleX = (W - paddleWidth) / 2;
+				}
+
+				document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+				window.addEventListener('resize', () => {
+					paddleX = Math.min(paddleX, W - paddleWidth);
+					paddleX = Math.max(0, paddleX);
+				});
+
+				gameLoop();
+
+				// 初始生成
+				setTimeout(() => {
+					for (let i = 0; i < 4; i++) setTimeout(() => spawnStar(), i * 80);
+					setTimeout(() => spawnMoon(), 150);
+					setTimeout(() => spawnBomb(), 250);
+				}, 200);
+			})();
+		</script>
+	</body>
+</html>

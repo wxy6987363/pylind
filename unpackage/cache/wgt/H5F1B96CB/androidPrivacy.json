@@ -1,0 +1,33 @@
+{
+    "version" : "4",
+    "prompt" : "template",
+    "title" : "Terms of Service",
+    "message" : "Please read the Terms of Service carefully. By continuing, you agree that we may collect device identifiers, operation logs, and other data to analyze and improve app performance.<br/>You can read the full terms at <a href=\"https://pylind.pages.dev/res/tos.html\">Terms of Service</a >. Click \"Accept\" to continue.",
+    "buttonAccept" : "Accept",
+    "buttonRefuse" : "Decline & Exit",
+    "hrefLoader" : "default",
+    "backToExit" : "true",
+    "second" : null,
+    "disagreeMode" : {
+        "support" : false,
+        "loadNativePlugins" : false,
+        "visitorEntry" : false,
+        "showAlways" : true
+    },
+    "styles" : {
+        "backgroundColor" : "#f3ffea",
+        "borderRadius" : "5px",
+        "title" : {
+            "color" : "#066711"
+        },
+        "buttonAccept" : {
+            "color" : "#066711"
+        },
+        "buttonRefuse" : {
+            "color" : "#ff0b03"
+        },
+        "buttonVisitor" : {
+            "color" : "#00ffff"
+        }
+    }
+}

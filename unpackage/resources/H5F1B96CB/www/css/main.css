@@ -1,0 +1,551 @@
+/* 基础重置与全局变量 */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	font-family: 'Segoe UI', Roboto, sans-serif;
+	/* 背景与文字颜色由变量控制，跟随系统模式 */
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+/* 浅色模式 (绿色风) - 默认，也作为prefers-color-scheme: light时的回退 */
+:root {
+	--bg-primary: #f0f7f0;
+	--bg-secondary: #ffffff;
+	--bg-elevated: #f8fbf8;
+	--bg-hover: #e8f0e8;
+	--border-color: #b8d9b8;
+	--text-primary: #1e3a1e;
+	--text-secondary: #2d5a2d;
+	--text-muted: #4a7a4a;
+	--accent: #2e7d32;
+	--accent-hover: #1e5a22;
+	--accent-light: #4caf50;
+	--shadow-color: rgba(46, 125, 50, 0.15);
+	--file-border: #2e7d32;
+	--terminal-bg: #1a2a1a;
+	--topbar-bg: #e0f0e0;
+	--scrollbar-track: #e0efe0;
+	--scrollbar-thumb: #8fb88f;
+}
+
+/* 深色模式 (自动跟随系统) */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg-primary: #1e1e1e;
+		--bg-secondary: #262626;
+		--bg-elevated: #2d2d2d;
+		--bg-hover: #323232;
+		--border-color: #3a3a3a;
+		--text-primary: #e8e8e8;
+		--text-secondary: #cccccc;
+		--text-muted: #9a9a9a;
+		--accent: #0ebe7f;
+		--accent-hover: #0da06a;
+		--accent-light: #2ecc71;
+		--shadow-color: rgba(14, 190, 127, 0.25);
+		--file-border: #0ebe7f;
+		--terminal-bg: #1e1e1e;
+		--topbar-bg: #2d2d2d;
+		--scrollbar-track: #262626;
+		--scrollbar-thumb: #3a3a3a;
+	}
+}
+
+/* 通用 SVG 图标尺寸 */
+svg {
+	width: 1em;
+	height: 1em;
+	margin-left: 5px;
+}
+
+/* ========== 文件列表视图 ========== */
+#file-list-view {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	background: var(--bg-primary);
+	padding: 40px 24px;
+}
+
+#file-list-view.active {
+	display: flex;
+}
+
+#file-list-view .header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 28px;
+	border-bottom: 1px solid var(--border-color);
+	padding-bottom: 16px;
+}
+
+#file-list-view .header h2 {
+	font-weight: 400;
+	font-size: 24px;
+	color: var(--text-primary);
+	letter-spacing: 0.5px;
+}
+
+#file-list-view .header .actions button {
+	background: transparent;
+	border: none;
+	color: var(--text-secondary);
+	font-size: 24px;
+	cursor: pointer;
+}
+
+#new-file-btn {
+	position: fixed;
+	bottom: 60px;
+	right: 30px;
+	width: 50px;
+	height: 50px;
+	border-radius: 25px;
+	background-color: var(--bg-elevated);
+	border: 1px solid var(--border-color);
+	box-shadow: 0 8px 20px var(--shadow-color);
+	color: var(--text-secondary);
+	font-size: 24px;
+	cursor: pointer;
+}
+
+#new-file-btn svg {
+	display: block;
+	margin: 0 auto;
+}
+
+.file-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+	overflow-y: auto;
+	padding-right: 6px;
+}
+
+.file-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: var(--bg-secondary);
+	padding: 10px 18px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: 0.1s;
+}
+
+.file-item:hover {
+	background: var(--bg-hover);
+}
+
+.file-item .name {
+	font-size: 16px;
+	font-weight: 400;
+	color: var(--text-primary);
+}
+
+.file-item .more {
+	color: var(--text-muted);
+	background: none;
+	border: none;
+	font-size: 18px;
+	cursor: pointer;
+	padding: 0 6px;
+	line-height: 1;
+	transition: 0.1s;
+}
+
+.empty-msg {
+	color: var(--text-muted);
+	text-align: center;
+	margin-top: 40px;
+	font-size: 16px;
+}
+
+/* ========== 关于视图 =========== */
+
+#about-view {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	background: var(--bg-primary);
+}
+
+#about-view.active {
+	display: flex;
+}
+
+.about-icon {
+	text-align: center;
+	margin-bottom: 30px;
+}
+
+.about-icon img {
+	width: 100px;
+	height: 100px;
+	border-radius: 10px;
+}
+
+.about-icon div {
+	font-size: 18px;
+	color: #136a00;
+}
+
+.about-content {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	padding: 5px;
+}
+
+.share-btn {
+	background: var(--bg-secondary);
+	padding: 10px 18px;
+	border-radius: 6px;
+}
+
+/* ========== 编辑器视图 ========== */
+#edit-view {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	background: var(--bg-primary);
+}
+
+#edit-view.active {
+	display: flex;
+}
+
+.topbar {
+	display: flex;
+	align-items: center;
+	flex: none;
+	height: 44px;
+	padding: 0 16px;
+	background: var(--topbar-bg);
+	box-shadow: 0 8px 20px var(--shadow-color);
+	gap: 10px;
+	border-bottom: 1px solid var(--border-color);
+}
+
+.topbar .back-btn {
+	background: transparent;
+	border: none;
+	font-size: 24px;
+	color: var(--text-secondary);
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.topbar .title {
+	flex: 1;
+	font-size: 15px;
+	font-weight: 400;
+	color: var(--text-secondary);
+}
+
+.topbar .btn-group {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.topbar .btn-group button {
+	background: transparent;
+	border: none;
+	font-size: 24px;
+	color: var(--text-secondary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.topbar .btn-group .run-btn {
+	color: var(--accent);
+}
+
+/* ========== 终端覆盖层 ========== */
+#console-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: none;
+	flex-direction: column;
+	background: var(--terminal-bg);
+	z-index: 1000;
+}
+
+#console-overlay.visible {
+	display: flex;
+}
+
+#console-overlay .topbar {
+	background: var(--bg-elevated);
+	border-bottom: 1px solid var(--border-color);
+}
+
+#console-overlay .topbar .title {
+	color: var(--text-muted);
+}
+
+#console-overlay .topbar .close-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	font-size: 22px;
+	padding: 0 12px;
+	cursor: pointer;
+	transition: 0.15s;
+}
+
+#console-overlay .topbar .close-btn:hover {
+	color: #ff6b6b;
+}
+
+#terminal-container {
+	flex: 1;
+	padding: 8px;
+	background: var(--terminal-bg);
+}
+
+/* ========== PyPI 视图 ========== */
+#pypi-view {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	background: var(--bg-primary);
+	overflow-y: auto;
+}
+
+#pypi-view.active {
+	display: flex;
+}
+
+.pypi-search {
+	display: flex;
+	gap: 10px;
+	margin: 20px;
+	flex-wrap: wrap;
+}
+
+.pypi-search input {
+	flex: 1;
+	min-width: 200px;
+	padding: 10px 16px;
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	color: var(--text-primary);
+	font-size: 14px;
+	outline: none;
+	transition: 0.15s;
+}
+
+.pypi-search input:focus {
+	border-color: var(--accent);
+}
+
+.pypi-search button {
+	margin-left: 5px;
+	background: transparent;
+	border: none;
+	color: var(--text-secondary);
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.pypi-search button:active {
+	transform: scale(0.95);
+}
+
+.pypi-search button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.pypi-results {
+	margin: 30px;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.pypi-result-item {
+	background: var(--bg-secondary);
+	padding: 12px 18px;
+	border-radius: 6px;
+	margin-bottom: 8px;
+	border-left: 4px solid var(--accent);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.pypi-result-item .info {
+	flex: 1;
+	min-width: 150px;
+}
+
+.pypi-result-item .name {
+	font-size: 16px;
+	font-weight: 500;
+	color: var(--text-primary);
+}
+
+.pypi-result-item .version {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-left: 8px;
+}
+
+.pypi-result-item .description {
+	font-size: 13px;
+	color: var(--text-secondary);
+	margin-top: 4px;
+}
+
+.pypi-result-item .actions {
+	display: flex;
+	gap: 8px;
+}
+
+.pypi-result-item .actions button {
+	padding: 6px 14px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 13px;
+	transition: 0.15s;
+}
+
+.pypi-result-item .install-btn {
+	background: var(--accent);
+	color: #ffffff;
+}
+
+.pypi-result-item .install-btn:hover {
+	background: var(--accent-hover);
+}
+
+.pypi-result-item .install-btn.installed {
+	background: var(--text-muted);
+	cursor: default;
+	color: var(--bg-primary);
+}
+
+.pypi-result-item .uninstall-btn {
+	background: #6b2a2a;
+	color: #ff6b6b;
+}
+
+.pypi-result-item .uninstall-btn:hover {
+	background: #8a3a3a;
+}
+
+.installed-packages {
+	margin: 10px;
+}
+
+.installed-packages h3 {
+	font-weight: 400;
+	font-size: 18px;
+	color: var(--text-primary);
+	margin-bottom: 12px;
+	border-bottom: 1px solid var(--border-color);
+	padding-bottom: 8px;
+}
+
+#installed-packages-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.package-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--bg-elevated);
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 13px;
+	color: var(--text-primary);
+	border: 1px solid var(--border-color);
+}
+
+.package-tag .remove-pkg {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 16px;
+	padding: 0 2px;
+	line-height: 1;
+}
+
+.package-tag .remove-pkg:hover {
+	color: #ff6b6b;
+}
+
+.pypi-loading {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 20px;
+}
+
+.pypi-error {
+	color: #ff6b6b;
+	text-align: center;
+	padding: 20px;
+}
+
+.pypi-empty {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 20px;
+}
+
+/* ========== 滚动条美化 ========== */
+.pypi-results::-webkit-scrollbar,
+#pypi-view::-webkit-scrollbar,
+.file-grid::-webkit-scrollbar {
+	width: 6px;
+}
+
+.pypi-results::-webkit-scrollbar-track,
+#pypi-view::-webkit-scrollbar-track,
+.file-grid::-webkit-scrollbar-track {
+	background: var(--scrollbar-track);
+}
+
+.pypi-results::-webkit-scrollbar-thumb,
+#pypi-view::-webkit-scrollbar-thumb,
+.file-grid::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	border-radius: 3px;
+}
+
+.pypi-results::-webkit-scrollbar-thumb:hover,
+#pypi-view::-webkit-scrollbar-thumb:hover,
+.file-grid::-webkit-scrollbar-thumb:hover {
+	background: var(--accent);
+}
