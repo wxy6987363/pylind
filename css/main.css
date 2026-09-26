@@ -502,9 +502,9 @@ svg {
 
 .topbar .title {
 	flex: 1;
-	font-size: 13px;
-	font-weight: 400;
-	color: var(--text-muted);
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--text-primary);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -661,21 +661,15 @@ svg {
 	display: flex;
 }
 
-.topbar .close-btn {
-	background: transparent;
-	border: none;
-	color: var(--text-primary);
-	font-size: 20px;
-	cursor: pointer;
+.close-btn {
 	transition: color 0.15s, transform 0.15s;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 }
 
-.topbar .close-btn:active {
+.close-btn:active {
 	color: var(--danger-active);
-	transform: scale(0.92);
 }
 
 #terminal-container, #layout-container {
@@ -1270,36 +1264,16 @@ svg {
 }
 
 /* ===== AI额度显示样式 ===== */
-.ai-credit-display {
-	padding: 12px 16px;
-	background: var(--bg-elevated);
-	border-bottom: 2px solid var(--border-color);
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	flex-shrink: 0;
-	gap: 12px;
-	touch-action: auto;
-}
-
 .ai-credit-info {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	font-size: 14px;
-	color: var(--text-secondary);
-}
-
-.ai-credit-info .credit-icon {
+	gap: 4px;
 	font-size: 18px;
+	color: var(--text-primary);
 }
 
 .ai-credit-info .credit-count {
 	font-weight: 700;
-	font-size: 18px;
-	color: var(--accent);
-	min-width: 24px;
-	text-align: center;
 }
 
 .ai-credit-deduct {

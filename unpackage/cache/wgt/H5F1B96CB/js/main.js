@@ -18,6 +18,11 @@ import {
 } from './ai.js';
 
 import {
+	donate,
+	purchase
+} from './pay.js'
+
+import {
 	Terminal
 } from './xterm/xterm.mjs';
 
@@ -358,7 +363,6 @@ const initApp = (async function() {
 	const updateBtn = document.getElementById('update-btn');
 	const emailBtn = document.getElementById('email-btn');
 	const QQBtn = document.getElementById('qq-btn');
-	const weixinBtn = document.getElementById('weixin-btn');
 
 	// ----- AI 侧边栏 DOM refs -----
 	const aiSidebar = document.getElementById('ai-sidebar');
@@ -375,52 +379,51 @@ const initApp = (async function() {
 
 	const packageSearch = document.getElementById('package-search');
 	const searchPackageBtn = document.getElementById('search-package-btn');
-	const barcodeBtn = document.getElementById('barcode-btn');
+	const installPackageBtn = document.getElementById('install-package-btn');
 	const pypiResults = document.getElementById('pypi-results');
 	const installedPackagesList = document.getElementById('installed-packages-list');
 
 	const aboutIcon = document.getElementById("about-icon");
+	const chatwayBtn = document.getElementById("chatway-btn");
 
 	const isDarkMode = matchMedia('(prefers-color-scheme: dark)');
 
 	// ----- 项目系统状态 -----
 	let currentProject = null;
 	let currentFileName = null;
-	let currentFileDisplayName = null;
-	let isInProject = false;
 
 	// AI 状态
 	let isAiSidebarOpen = false;
 	let aiCredits = 0;
 	let conversationHistory = [];
 	const MAX_HISTORY_ROUNDS = 10;
-	
+
 	let aiClient = null;
-	
+
 	(async () => {
 		function getAndroidId() {
-		    if (plus.os.name.toLowerCase() !== 'android') return '';
-		    try {
-		        // 关键：用 invoke 直接调用 Settings$Secure 的 getString 方法
-		        var main = plus.android.runtimeMainActivity();
-		        var resolver = main.getContentResolver();
-		        
-		        var androidId = plus.android.invoke(
-		            'android.provider.Settings$Secure', 
-		            'getString', 
-		            resolver, 
-		            'android_id'
-		        );
-		        
-		        // 过滤已知的无效值
-		        if (!androidId || androidId === '9774d56d682e549c') return '';
-		        return androidId;
-		    } catch (e) {
-		        console.error('获取 Android ID 失败:', e);
-		        return '';
-		    }
+			if (plus.os.name.toLowerCase() !== 'android') return '';
+			try {
+				// 关键：用 invoke 直接调用 Settings$Secure 的 getString 方法
+				var main = plus.android.runtimeMainActivity();
+				var resolver = main.getContentResolver();
+
+				var androidId = plus.android.invoke(
+					'android.provider.Settings$Secure',
+					'getString',
+					resolver,
+					'android_id'
+				);
+
+				// 过滤已知的无效值
+				if (!androidId || androidId === '9774d56d682e549c') return '';
+				return androidId;
+			} catch (e) {
+				console.error('获取 Android ID 失败:', e);
+				return '';
+			}
 		}
-	
+
 		aiClient = new AIClient({
 			token: '57b43a1858f7b562f103599872a432ce57afd5fa6180d20cd66084712aadd2fc',
 			userId: getAndroidId()
@@ -619,7 +622,7 @@ const initApp = (async function() {
 			}
 		}
 
-		editorTitle.textContent = `${tab.projectName} / ${tab.fileName}`;
+		editorTitle.textContent = `${tab.filePath.split('/').slice(1).join('/')}`;
 		if (tab.isDirty) {
 			editorTitle.textContent = '* ' + editorTitle.textContent;
 		}
@@ -643,18 +646,7 @@ const initApp = (async function() {
 		renderTabs();
 
 		if (activeTabId === tabId) {
-			editorTitle.textContent = `${tab.projectName} / ${tab.fileName}`;
-		}
-	}
-
-	function markTabDirty(tabId) {
-		const tab = openTabs.find(t => t.id === tabId);
-		if (tab) {
-			tab.isDirty = true;
-			if (activeTabId === tabId) {
-				editorTitle.textContent = `* ${tab.projectName} / ${tab.fileName}`;
-			}
-			renderTabs();
+			editorTitle.textContent = `${tab.filePath.split('/').slice(1).join('/')}`;
 		}
 	}
 
@@ -1219,26 +1211,93 @@ User: ${userInput}`;
 
 	editor.focus();
 
-	editor.onDidChangeModelContent(() => {
+	// ============================================================
+	// 自动保存逻辑
+	// ============================================================
+	let autoSaveTimer = null;
+	let pendingCharCount = 0;
+	const AUTO_SAVE_CHAR_THRESHOLD = 5;
+	const AUTO_SAVE_INTERVAL = 10000; // 10 秒
+
+	async function autoSaveActiveTab(reason = '') {
+		const activeTab = getActiveTab();
+		if (!activeTab) return;
+		if (!activeTab.isDirty) return;
+
+		try {
+			await saveTabContent(activeTab.id);
+
+			// 保存后刷新一下标题，去掉 *
+			if (activeTabId === activeTab.id) {
+				editorTitle.textContent = `${activeTab.filePath.split('/').slice(1).join('/')}`;
+			}
+
+			console.log(`[AutoSave] 已保存 (${reason}) -> ${activeTab.fileName}`);
+		} catch (e) {
+			console.warn('[AutoSave] 保存失败:', e);
+		}
+	}
+
+	function resetAutoSaveTimer() {
+		if (autoSaveTimer) {
+			clearInterval(autoSaveTimer);
+		}
+		autoSaveTimer = setInterval(() => {
+			autoSaveActiveTab('15s 定时');
+		}, AUTO_SAVE_INTERVAL);
+	}
+
+	function resetCharCounter() {
+		pendingCharCount = 0;
+	}
+
+	// 启动定时器
+	resetAutoSaveTimer();
+
+	// 监听内容变化
+	editor.onDidChangeModelContent((e) => {
 		const model = editor.getModel();
 		if (!model) return;
 
+		// ---------- 1. 原有 dirty 标记逻辑 ----------
 		for (const [tabId, tabModel] of tabModels) {
 			if (tabModel === model) {
 				const tab = openTabs.find(t => t.id === tabId);
-				if (tab && !tab.isDirty) {
-					const currentContent = model.getValue();
-					if (currentContent !== tab.content) {
-						tab.isDirty = true;
-						if (activeTabId === tabId) {
-							editorTitle.textContent = `* ${tab.projectName} / ${tab.fileName}`;
+				if (tab) {
+					if (!tab.isDirty) {
+						const currentContent = model.getValue();
+						if (currentContent !== tab.content) {
+							tab.isDirty = true;
+							if (activeTabId === tabId) {
+								editorTitle.textContent =
+									`* ${tab.filePath.split('/').slice(1).join('/')}`;
+							}
+							renderTabs();
 						}
-						renderTabs();
+					}
+
+					// ---------- 2. 累计修改字符数 ----------
+					const changes = e.changes || [];
+					let delta = 0;
+					for (const ch of changes) {
+						delta += (ch.text ? ch.text.length : 0);
+						delta += (ch.rangeLength || 0);
+					}
+					pendingCharCount += delta;
+
+					// 达到阈值就保存
+					if (pendingCharCount >= AUTO_SAVE_CHAR_THRESHOLD) {
+						resetCharCounter();
+						autoSaveActiveTab('累计修改 10 字符');
 					}
 				}
 				break;
 			}
 		}
+	});
+
+	editor.onDidBlurEditorText(() => {
+		autoSaveActiveTab('编辑器失焦');
 	});
 
 	const darkTheme = {
@@ -1749,13 +1808,15 @@ User: ${userInput}`;
 						if (entries[i].isFile) {
 							results.push({
 								name: entries[i].name,
-								path: dirPath + '/' + entries[i].name,
+								path: dirPath + '/' + entries[i]
+									.name,
 								isFile: true
 							});
 						} else if (entries[i].isDirectory) {
 							results.push({
 								name: entries[i].name,
-								path: dirPath + '/' + entries[i].name,
+								path: dirPath + '/' + entries[i]
+									.name,
 								isFile: false
 							});
 						}
@@ -1871,7 +1932,6 @@ User: ${userInput}`;
 					longPressTimer = setTimeout(() => {
 						isLongPress = true;
 						showProjectLongPressMenu(proj.name, div);
-						if (navigator.vibrate) navigator.vibrate(30);
 					}, 600);
 				});
 
@@ -1978,7 +2038,6 @@ User: ${userInput}`;
 	// ============================================================
 	async function openProject(projectName) {
 		currentProject = projectName;
-		isInProject = true;
 
 		const oldTabs = openTabs.filter(t => t.projectName !== projectName);
 		for (const tab of openTabs) {
@@ -2029,9 +2088,7 @@ User: ${userInput}`;
 			const tabId = await createTab(filePath, projectName, content);
 
 			currentProject = projectName;
-			isInProject = true;
 			currentFileName = filePath;
-			currentFileDisplayName = fileName;
 
 			showEditView();
 		} catch (e) {
@@ -2057,7 +2114,8 @@ User: ${userInput}`;
 	});
 
 	document.addEventListener('click', function(e) {
-		if (fileDrawerOpen && !fileDrawer.contains(e.target) && e.target !== drawerToggleBtn && !
+		if (fileDrawerOpen && !fileDrawer.contains(e.target) && e.target !== drawerToggleBtn &&
+			!
 			drawerToggleBtn.contains(e.target)) {
 			closeFileDrawer();
 		}
@@ -2171,7 +2229,6 @@ User: ${userInput}`;
 		item.addEventListener('touchstart', (e) => {
 			longPressTimer = setTimeout(() => {
 				showFileContextMenu(fileName, folderName, item);
-				if (navigator.vibrate) navigator.vibrate(30);
 			}, 600);
 		});
 		item.addEventListener('touchend', () => clearTimeout(longPressTimer));
@@ -2203,13 +2260,15 @@ User: ${userInput}`;
 										currentProject);
 									if (tab) {
 										const oldId = tab.id;
-										const newPath = dir + '/' + newName;
+										const newPath = dir + '/' +
+											newName;
 										const newId = getTabId(newPath,
 											currentProject);
 										tab.filePath = newPath;
 										tab.fileName = newName;
 										tab.id = newId;
-										const model = tabModels.get(oldId);
+										const model = tabModels.get(
+											oldId);
 										if (model) {
 											tabModels.delete(oldId);
 											tabModels.set(newId, model);
@@ -2278,7 +2337,8 @@ User: ${userInput}`;
 										folderFullPath);
 									for (const entry of entries) {
 										if (entry.isFile) {
-											await deleteFile(folderFullPath + '/' +
+											await deleteFile(folderFullPath +
+												'/' +
 												entry.name);
 											const tab = findTabByPath(
 												folderFullPath + '/' + entry
@@ -2308,12 +2368,14 @@ User: ${userInput}`;
 						plus.nativeUI.prompt('Enter file name:', function(res) {
 							if (res.index === 0 && res.value) {
 								const fileName = res.value.trim();
-								const filePath = folderFullPath + '/' + fileName;
+								const filePath = folderFullPath + '/' +
+									fileName;
 								putFile(filePath, '');
 								renderDrawerFileList();
 								renderProjectList();
-								openFileInProject(currentProject, filePath.split(
-									"/").slice(1).join("/"));
+								openFileInProject(currentProject, filePath
+									.split(
+										"/").slice(1).join("/"));
 							}
 						}, 'New File', 'main.py', ['Ok', 'Cancel']);
 					}
@@ -2398,7 +2460,8 @@ User: ${userInput}`;
 
 				header.addEventListener('click', async (e) => {
 					e.stopPropagation();
-					window._folderExpanded[folderKey] = !window._folderExpanded[folderKey];
+					window._folderExpanded[folderKey] = !window._folderExpanded[
+						folderKey];
 					await renderDrawerFileList();
 				});
 
@@ -2406,7 +2469,6 @@ User: ${userInput}`;
 				header.addEventListener('mousedown', (e) => {
 					longPressTimer = setTimeout(() => {
 						showFolderContextMenu(subFolder.name, folderPath, header);
-						if (navigator.vibrate) navigator.vibrate(30);
 					}, 600);
 				});
 				header.addEventListener('mouseup', () => clearTimeout(longPressTimer));
@@ -2414,7 +2476,6 @@ User: ${userInput}`;
 				header.addEventListener('touchstart', (e) => {
 					longPressTimer = setTimeout(() => {
 						showFolderContextMenu(subFolder.name, folderPath, header);
-						if (navigator.vibrate) navigator.vibrate(30);
 					}, 600);
 				});
 				header.addEventListener('touchend', () => clearTimeout(longPressTimer));
@@ -2536,7 +2597,8 @@ User: ${userInput}`;
 
 				header.addEventListener('click', async (e) => {
 					e.stopPropagation();
-					window._folderExpanded[folderKey] = !window._folderExpanded[folderKey];
+					window._folderExpanded[folderKey] = !window._folderExpanded[
+						folderKey];
 					await renderDrawerFileList();
 				});
 
@@ -2544,7 +2606,6 @@ User: ${userInput}`;
 				header.addEventListener('mousedown', (e) => {
 					longPressTimer = setTimeout(() => {
 						showFolderContextMenu(folder.name, '', header);
-						if (navigator.vibrate) navigator.vibrate(30);
 					}, 600);
 				});
 				header.addEventListener('mouseup', () => clearTimeout(longPressTimer));
@@ -2552,7 +2613,6 @@ User: ${userInput}`;
 				header.addEventListener('touchstart', (e) => {
 					longPressTimer = setTimeout(() => {
 						showFolderContextMenu(folder.name, '', header);
-						if (navigator.vibrate) navigator.vibrate(30);
 					}, 600);
 				});
 				header.addEventListener('touchend', () => clearTimeout(longPressTimer));
@@ -2689,12 +2749,10 @@ User: ${userInput}`;
 		await saveTabContent(activeTab.id);
 		renderProjectList();
 
-		editorTitle.textContent = `${activeTab.projectName} / ${activeTab.fileName} (Saved)`;
+		editorTitle.textContent = `${activeTab.filePath.split('/').slice(1).join('/')} (Saved)`;
 		setTimeout(() => {
-			if (getActiveTab()) {
-				editorTitle.textContent =
-					`${getActiveTab().projectName} / ${getActiveTab().fileName}`;
-			}
+			editorTitle.textContent =
+				`${activeTab.filePath.split('/').slice(1).join('/')}`;
 		}, 600);
 	}
 
@@ -2860,8 +2918,6 @@ User: ${userInput}`;
 
 		currentProject = null;
 		currentFileName = null;
-		currentFileDisplayName = null;
-		isInProject = false;
 
 		editor.setModel(null);
 		editorTitle.textContent = 'No file opened';
@@ -2887,7 +2943,7 @@ User: ${userInput}`;
 				title,
 				subtitle,
 				cover,
-				icon: 'message.png'
+				icon: '_www/res/mipmap-xxxhdpi/message.png'
 			});
 		} catch (e) {
 			console.warn('[Push] Failed:', e.message);
@@ -3006,19 +3062,6 @@ User: ${userInput}`;
 	// ============================================================
 	// Pyodide 初始化 (懒加载)
 	// ============================================================
-
-	const PhoneModule = {
-		vibrate: function(time = 50) {
-			plus.device.vibrate(time);
-		},
-		beep: function(times = 1) {
-			plus.device.beep(times);
-		},
-		alert: function(content, success = () => {}) {
-			plus.nativeUI.alert(content, success);
-		}
-	};
-
 
 	// ============ 读取目录（官方标准用法） ============
 	function readDirAll(entry) {
@@ -3242,7 +3285,8 @@ for item in os.listdir('/home/pylind'):
 											resolve();
 										};
 										writer.onerror = function(e) {
-											reject(new Error('写入文件失败: ' + e
+											reject(new Error(
+												'写入文件失败: ' + e
 												.message));
 										};
 										writer.write(content);
@@ -3319,7 +3363,7 @@ for item in os.listdir('/home/pylind'):
 				stderr: (text) => term.writeln('\x1b[31m' + text + '\x1b[0m'),
 				env: {
 					HOME: '/home/pylind'
-				}
+				},
 			});
 			pyodide.FS.mkdirTree('/home/pylind');
 
@@ -3329,7 +3373,6 @@ for item in os.listdir('/home/pylind'):
 				term.writeln(prompt + val);
 				return val;
 			});
-			pyodide.registerJsModule('phone', PhoneModule);
 			pyodide.runPython(`
                 import builtins
                 builtins.input = js_input
@@ -3506,22 +3549,167 @@ for item in os.listdir('/home/pylind'):
 		pypiResults.innerHTML = '<div class="pypi-loading">Searching</div>';
 
 		try {
-			const response = await fetch(
-				`https://pypi.org/pypi/${encodeURIComponent(query.trim())}/json`);
+			// ---- 1. 索引缓存（挂在函数自身属性上，避免额外全局变量）----
+			if (!searchPyPI._indexPromise) {
+				searchPyPI._indexPromise = fetch('https://pypi.org/simple/')
+					.then(r => {
+						if (!r.ok) throw new Error(`Index ${r.status}`);
+						return r.text();
+					})
+					.then(html => {
+						const names = [];
+						const re = /\/simple\/([^/"']+)\//g;
+						let m;
+						while ((m = re.exec(html)) !== null) {
+							names.push(decodeURIComponent(m[1]));
+						}
+						return names;
+					})
+					.catch(e => {
+						searchPyPI._indexPromise = null; // 失败允许重试
+						throw e;
+					});
+			}
+			const index = await searchPyPI._indexPromise;
 
-			if (!response.ok) {
-				if (response.status === 404) {
-					pypiResults.innerHTML =
-						`<div class="pypi-error">Not Found: "${query.trim()}"</div>`;
-				} else {
-					pypiResults.innerHTML =
-						`<div class="pypi-error">Search error: ${response.statusText}</div>`;
+			// ---- 2. 内联模糊匹配 ----
+			const norm = s => s.toLowerCase().replace(/[-_.]+/g, '-');
+			const tokenize = s => norm(s).split('-').flatMap(p => p.split(/(?=[A-Z])/)).filter(
+				Boolean);
+
+			const lev = (a, b) => {
+				if (a === b) return 0;
+				if (!a.length) return b.length;
+				if (!b.length) return a.length;
+				if (a.length > b.length)[a, b] = [b, a];
+				const prev = new Array(a.length + 1);
+				const curr = new Array(a.length + 1);
+				for (let i = 0; i <= a.length; i++) prev[i] = i;
+				for (let j = 1; j <= b.length; j++) {
+					curr[0] = j;
+					for (let i = 1; i <= a.length; i++) {
+						const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+						curr[i] = Math.min(prev[i] + 1, curr[i - 1] + 1, prev[i - 1] + cost);
+					}
+					for (let i = 0; i <= a.length; i++) prev[i] = curr[i];
 				}
+				return prev[a.length];
+			};
+
+			const ratio = (a, b) => {
+				if (!a && !b) return 100;
+				if (!a || !b) return 0;
+				return (1 - lev(a, b) / Math.max(a.length, b.length)) * 100;
+			};
+
+			const partialRatio = (a, b) => {
+				if (!a || !b) return 0;
+				if (a.length > b.length)[a, b] = [b, a];
+				let best = 0;
+				const w = a.length;
+				const step = w > 8 ? Math.max(1, Math.floor(w / 4)) : 1;
+				for (let i = 0; i + w <= b.length; i += step) {
+					const r = ratio(a, b.substr(i, w));
+					if (r > best) best = r;
+					if (best === 100) break;
+				}
+				return best;
+			};
+
+			const tokenSetRatio = (a, b) => {
+				const ta = tokenize(a),
+					tb = tokenize(b);
+				if (!ta.length || !tb.length) return 0;
+				const setA = new Set(ta),
+					setB = new Set(tb);
+				const inter = [...setA].filter(x => setB.has(x)).sort();
+				const diffA = [...setA].filter(x => !setB.has(x)).sort();
+				const diffB = [...setB].filter(x => !setA.has(x)).sort();
+				const sA = [...inter, ...diffA].join(' ');
+				const sB = [...inter, ...diffB].join(' ');
+				const sI = inter.join(' ');
+				return Math.max(ratio(sI, sA), ratio(sI, sB), ratio(sA, sB));
+			};
+
+			const bonusScore = (query, name) => {
+				const q = norm(query),
+					n = norm(name);
+				if (q === n) return 100;
+				if (n.startsWith(q)) return 95;
+				if (n.includes(q)) return 80;
+				for (const t of tokenize(name))
+					if (t.startsWith(q)) return 75;
+				return 0;
+			};
+
+			const weightedRatio = (query, name) => {
+				const q = norm(query),
+					n = norm(name);
+				const base = ratio(q, n);
+				const partial = partialRatio(q, n);
+				const tokenSet = tokenSetRatio(query, name);
+				const bonus = bonusScore(query, name);
+
+				let score;
+				if (q.length <= 3) {
+					score = Math.max(base * 0.5 + bonus * 0.5, bonus);
+				} else if (q.length <= 8) {
+					score = Math.max(
+						base * 0.4 + bonus * 0.6,
+						tokenSet * 0.7 + bonus * 0.3,
+						partial * 0.6 + bonus * 0.4
+					);
+				} else {
+					score = Math.max(
+						base * 0.5 + tokenSet * 0.3 + bonus * 0.2,
+						tokenSet * 0.8 + bonus * 0.2,
+						partial * 0.5 + tokenSet * 0.5
+					);
+				}
+				const lenDiff = Math.abs(q.length - n.length) / Math.max(q.length, n.length);
+				return Math.max(0, Math.min(100, score * (1 - lenDiff * 0.15)));
+			};
+
+			const q = query.trim();
+			const qLen = norm(q).length;
+			const scored = [];
+			for (const name of index) {
+				const n = norm(name);
+				if (n.length > qLen * 2 + 4 && !n.includes(norm(q))) continue; // 粗筛
+				const s = weightedRatio(q, name);
+				if (s > 55) scored.push({
+					name,
+					score: s
+				});
+			}
+			scored.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
+			const matched = scored.slice(0, 20).map(x => x.name);
+
+			if (!matched.length) {
+				pypiResults.innerHTML = `<div class="pypi-error">Not Found: "${q}"</div>`;
 				return;
 			}
 
-			const data = await response.json();
-			displaySearchResult(data);
+			// ---- 3. 并发取详情 ----
+			const details = await Promise.all(
+				matched.map(async (name) => {
+					try {
+						const res = await fetch(
+							`https://pypi.org/pypi/${encodeURIComponent(name)}/json`
+						);
+						return res.ok ? await res.json() : null;
+					} catch {
+						return null;
+					}
+				})
+			);
+
+			const valid = details.filter(Boolean);
+			if (!valid.length) {
+				pypiResults.innerHTML = `<div class="pypi-error">Not Found: "${q}"</div>`;
+				return;
+			}
+			displaySearchResults(valid);
 
 		} catch (error) {
 			console.error('Search error:', error);
@@ -3529,92 +3717,26 @@ for item in os.listdir('/home/pylind'):
 		}
 	}
 
-	function scanWheel() {
-		plus.android.requestPermissions(
-			['android.permission.CAMERA'],
-			function() {
-				startScan();
-			},
-			() => {}
-		);
 
-		function startScan() {
-			let barcode = plus.barcode.create('barcode', [plus.barcode.QR], {
-				position: 'absolute',
-				top: '0px',
-				left: '0px',
-				width: '100%',
-				height: '100%',
-				frameColor: "#d4a843",
-				scanbarColor: '#f5d99b'
-			});
 
-			barcode.onmarked = async function(type, result) {
-				barcode.close();
+	function displaySearchResults(list) {
+		const items = list.map(data => {
+			const info = data.info;
+			const versions = data.releases ? Object.keys(data.releases).sort((a, b) => {
+				return b.localeCompare(a, undefined, {
+					numeric: true
+				});
+			}) : [];
 
-				try {
-					if (!result.endsWith('.whl') && !result.includes('.whl?')) {
-						plus.nativeUI.toast('The QR codemcontains incorrect information');
-						return;
-					}
+			const latestVersion = versions[0] || info.version || 'Unkown';
+			const installed = isPackageInstalled(info.name);
 
-					await pyodide.loadPackage('micropip');
+			function truncate(str, maxLength = 30) {
+				if (str.length <= maxLength) return str;
+				return String(str).substring(0, maxLength) + '...';
+			}
 
-					let pkgName = await pyodide.runPythonAsync(`
-                        import re
-                        from urllib.parse import urlparse
-                        from pathlib import Path
-
-                        url = '${result}'
-                        filename = Path(urlparse(url).path).name
-                        name = re.split(r'-[0-9]', filename)[0]
-                        name
-                    `);
-
-					plus.nativeUI.toast('Install: ' + pkgName);
-
-					await pyodide.runPythonAsync(`
-                        import micropip
-                        await micropip.install('${result}')
-                    `);
-
-					const installed = getInstalledPackages();
-					installed.push(pkgName);
-					saveInstalledPackages(installed);
-
-					renderInstalledPackages();
-				} catch (e) {
-					plus.ui.toast('Install error：' + e.message);
-				}
-			};
-
-			barcode.onerror = function(error) {
-				barcode.close();
-				plus.ui.toast('Scan failed：' + error.message);
-			};
-
-			plus.webview.currentWebview().append(barcode);
-			barcode.start();
-		}
-	}
-
-	function displaySearchResult(data) {
-		const info = data.info;
-		const versions = data.releases ? Object.keys(data.releases).sort((a, b) => {
-			return b.localeCompare(a, undefined, {
-				numeric: true
-			});
-		}) : [];
-
-		const latestVersion = versions[0] || info.version || 'Unkown';
-		const installed = isPackageInstalled(info.name);
-
-		function truncate(str, maxLength = 30) {
-			if (str.length <= maxLength) return str;
-			return String(str).substring(0, maxLength) + '...';
-		}
-
-		pypiResults.innerHTML = `
+			return `
             <div class="pypi-result-item">
                 <div class="info">
                     <div>
@@ -3640,6 +3762,9 @@ for item in os.listdir('/home/pylind'):
                 </div>
             </div>
         `;
+		}).join('');
+
+		pypiResults.innerHTML = items;
 	}
 
 	async function installPackage(packageName) {
@@ -3675,7 +3800,6 @@ for item in os.listdir('/home/pylind'):
 				throw new Error('Pyodide is not ready');
 			}
 
-			await pyodide.loadPackage('micropip');
 			const micropip = pyodide.pyimport('micropip');
 			await micropip.install(packageName);
 
@@ -3744,11 +3868,11 @@ for item in os.listdir('/home/pylind'):
 		try {
 			if (!pyodide) return;
 
-			const packages = getInstalledPackages();
-			if (packages.length === 0) return;
-
 			await pyodide.loadPackage('micropip');
 			const micropip = pyodide.pyimport('micropip');
+
+			const packages = getInstalledPackages();
+			if (packages.length === 0) return;
 
 			for (const pkg of packages) {
 				try {
@@ -4556,32 +4680,6 @@ for item in os.listdir('/home/pylind'):
 			})
 	});
 
-	weixinBtn.addEventListener('click', () => {
-		const imgPath = 'img/me.jpg';
-		const img = new Image();
-		img.src = imgPath;
-
-		plus.nativeUI.showWaiting('Loading...');
-
-		img.onload = function() {
-			plus.nativeUI.closeWaiting();
-			plus.nativeUI.toast('Long press to save');
-
-			plus.nativeUI.previewImage([imgPath], {
-				current: 0,
-				indicator: 'number',
-				onLongPress: function(e) {
-					saveImageToGallery(e.url);
-				}
-			});
-		};
-
-		img.onerror = function() {
-			plus.nativeUI.closeWaiting();
-			plus.nativeUI.toast('Load error');
-		};
-	});
-
 	aboutBtn.addEventListener('click', () => {
 		togglePage('about');
 	});
@@ -4589,7 +4687,7 @@ for item in os.listdir('/home/pylind'):
 	searchPackageBtn.addEventListener('click', () => {
 		searchPyPI(packageSearch.value);
 	});
-	barcodeBtn.addEventListener('click', scanWheel);
+	installPackageBtn.addEventListener('click', () => installPackageHandler(packageSearch.value))
 	packageSearch.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter') {
 			searchPyPI(packageSearch.value);
@@ -4597,49 +4695,105 @@ for item in os.listdir('/home/pylind'):
 	});
 
 	aboutIcon.addEventListener('click', () => {
-		plus.webview.open('https://pylind.pages.dev', '404', {
+		plus.webview.open('https://pylind.pages.dev', 'Pylind', {
 			disablePlus: true,
 			top: '0px',
 			left: '0px',
 			width: '100%',
-			height: '100%'
+			height: '100%',
 		}, 'slide-in-top');
 	});
-    
-	Pay.bindDonateButton({
-	  clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
-	  env: 'sandbox',
-	  trigger: '#donate-btn',
-	  amount: 5,                      // 默认金额，可省（默认 5）
-	  donatePresets: [1, 2, 5, 10],   // 预设按钮，可省（默认就是这个）
-	  onSuccess: (data) => {
-	    // data.amount / data.currency / data.mode === 'donate'
-	    alert('Thank you! You paid ' + data.amount + ' ' + data.currency);
-	  },
-	  onCancel: () => {},
-	  onError: (err) => alert(err.message),
+
+	// ========== 预加载（放在 plusready 里，应用启动时执行一次）==========
+	let chatMaskWv = null;
+	let chatWv = null;
+
+	function preloadChat() {
+		// 父窗口：遮罩层
+		chatMaskWv = plus.webview.create('overlay.html', 'chatMask', {
+			top: '0px',
+			left: '0px',
+			width: '100%',
+			height: '100%',
+			opacity: 0.5,
+			zindex: 999,
+		});
+
+		// 子窗口：内容
+		chatWv = plus.webview.create('https://pylind.pages.dev/chat', 'Chat', {
+			disablePlus: true,
+			margin: 'auto',
+			width: '80%',
+			height: '80%',
+			background: 'transparent',
+			zindex: 1000,
+		});
+
+		// 点遮罩 -> 隐藏
+		chatMaskWv.addEventListener('touchstart', function() {
+			chatMaskWv.hide('fade-out', 200);
+			chatWv.hide('fade-out', 200);
+		}, false);
+	}
+
+	preloadChat();
+
+	// ========== 点击按钮：直接显示 ==========
+	chatwayBtn.addEventListener('click', () => {
+		chatMaskWv.show('fade-in', 200);
+		chatWv.show('fade-in', 200);
 	});
-	
-    Pay.bindPurchaseButton({
-      clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
-      env: 'sandbox',              // 'sandbox' 或 'live'
-      currency: 'USD',
-      amount: 1.00,
-      basePrice: { USD: 1, CNY: 6.5, EUR: 0.85 },
-      baseTimes: 100,
-      trigger: '.payai-btn',       // 自动绑定触发按钮
 
-      // ✅ 成功回调：自定义逻辑，加次数放这里
-      onSuccess({ times, amount, currency, result }) {
-        aiCredits += times;
-        saveAiCredits();
-        alert(`You got ${times.toLocaleString()} times!`);
-      },
+	donate({
+		clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
+		env: 'sandbox',
+		trigger: '#donate-btn',
+		amount: 5, // 默认金额，可省（默认 5）
+		donatePresets: [1, 2, 5, 10], // 预设按钮，可省（默认就是这个）
+		onSuccess: (data) => {
+			// data.amount / data.currency / data.mode === 'donate'
+			alert('Thank you! You paid ' + data.amount + ' ' + data.currency);
+		},
+		onCancel: () => {},
+		onError: (err) => alert(err.message),
+	});
 
-      onCancel() { console.log('User cancelled'); },
-      onError(err) { console.error('PayPal error:', err); },
-    });
-	
+	purchase({
+		clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
+		env: 'sandbox', // 'sandbox' 或 'live'
+		currency: 'USD',
+		amount: 1.00,
+		basePrice: {
+			USD: 1,
+			CNY: 6.5,
+			EUR: 0.85,
+			GBP: 0.8,
+			CHF: 0.8,
+			JPY: 150
+		},
+		baseTimes: 100,
+		trigger: '.payai-btn', // 自动绑定触发按钮
+
+		// ✅ 成功回调：自定义逻辑，加次数放这里
+		onSuccess({
+			times,
+			amount,
+			currency,
+			result
+		}) {
+			aiCredits += times;
+			saveAiCredits();
+			alert(`You got ${times.toLocaleString()} times!`);
+		},
+
+		onCancel() {
+			console.log('User cancelled');
+		},
+		onError(err) {
+			console.error('PayPal error:', err);
+		},
+	});
+
 	window.installPackageHandler = (packageName) => {
 		if (packageName === 'matplotlib') {
 			showVideoAdvert(installPackage, packageName);
@@ -4658,7 +4812,8 @@ for item in os.listdir('/home/pylind'):
 
 	document.addEventListener('keydown', (e) => {
 		if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-			if (!editView.classList.contains('active') && !pypiView.classList.contains('active')) {
+			if (!editView.classList.contains('active') && !pypiView.classList.contains(
+					'active')) {
 				e.preventDefault();
 				newProjectHandler();
 			}
@@ -4685,40 +4840,7 @@ for item in os.listdir('/home/pylind'):
 			path: path,
 			params: params
 		};
-	}
-
-	function checkLaunch() {
-		if (plus.runtime.launcher === 'shortcut') {
-			const args = plus.runtime.arguments;
-			if (args) {
-				const params = JSON.parse(args);
-				openFile(params.name);
-			}
-		} else if (plus.runtime.launcher === 'scheme') {
-			const url = plus.runtime.arguments;
-			if (url) {
-				const args = parseSchemeUrl(url);
-				console.log(JSON.stringify(args));
-				switch (args.path) {
-					case 'new':
-						if (!args.params?.name) return;
-						putFile(args.params.name, args.params.content);
-						renderProjectList();
-						break;
-					case 'editor':
-						if (!args.params?.name) return;
-						openFile(args.params.name);
-						break;
-				}
-			}
-		}
-	}
-
-	checkLaunch();
-
-	document.addEventListener('newintent', function() {
-		checkLaunch();
-	}, false);
+	}F
 
 	plus.key.addEventListener('backbutton', () => {
 		if (activeActionSheet) {
@@ -4776,21 +4898,22 @@ for item in os.listdir('/home/pylind'):
 	})();
 
 	(async () => {
-		plus.nativeUI.showWaiting('Loading Python', {
+		plus.nativeUI.showWaiting('Loading Python...', {
 			padding: '4%',
 			round: '5px',
+			padlock: true,
+			back: 'close',
+			model: false,
 			loading: {
 				type: 'snow',
 				interval: 150,
-			},
-			model: false
+			}
 		});
 		await ensurePyodide();
-		plus.nativeUI.closeWaiting();
 		await initPyPI();
+		renderInstalledPackages();
+		plus.nativeUI.closeWaiting();
 	})();
-
-	renderInstalledPackages();
 
 	loadAiCredits();
 	updateCreditDisplay();
