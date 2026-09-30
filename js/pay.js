@@ -1,18 +1,7 @@
 /* ============================================================
    PayPal 支付封装（HTML Plus 原生通道版）— ESM 版本
-   两种模式：
-     - purchase：购买次数（金额 ↔ 次数兑换，快捷次数 10/50/100/500）
-     - donate  ：赞助（随意金额，预设 1/2/5/10）
-   对外暴露：
-     createPurchaseCheckout(options) -> 实例
-     createDonateCheckout(options)   -> 实例
-     bindPurchaseButton(options)     -> 实例（自动绑定 trigger 按钮）
-     bindDonateButton(options)       -> 实例（自动绑定 trigger 按钮）
    ============================================================ */
 
-/* ------------------------------------------------------------
-   公共：样式注入（只注入一次）
-   ------------------------------------------------------------ */
 const STYLE_ID = 'pp-checkout-style';
 
 function ensureStyle() {
@@ -54,10 +43,6 @@ function ensureStyle() {
 	document.head.appendChild(style);
 }
 
-/* ------------------------------------------------------------
-   货币图标（只存 path d，便于形变）
-   CNY 与 JPY 都是「¥」字形，这里做细微差异以便切换时可见形变
-   ------------------------------------------------------------ */
 const SYMBOLS_PATH = {
 	USD: "M12 2v20M17 5.5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
 	CNY: "M6 4l6 7 6-7M12 11v9M7 13h10M7 17h10",
@@ -71,9 +56,7 @@ function symbolSvg(d) {
 	return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 }
 
-/* ------------------------------------------------------------
-   原生 SVG 形变工具（采样 + 逐点插值）
-   ------------------------------------------------------------ */
+/* SVG 形变工具 */
 const _svgNS = "http://www.w3.org/2000/svg";
 const _sampleCache = new Map();
 
@@ -92,10 +75,7 @@ function _samplePath(d, samplesPerSub = 28) {
 		const pts = [];
 		for (let i = 0; i <= samplesPerSub; i++) {
 			const pt = p.getPointAtLength((len * i) / samplesPerSub);
-			pts.push({
-				x: pt.x,
-				y: pt.y
-			});
+			pts.push({ x: pt.x, y: pt.y });
 		}
 		return pts;
 	});
@@ -114,25 +94,19 @@ function _alignShapes(a, b) {
 			const sp = shapes[i] || shapes[shapes.length - 1];
 			const pts = [];
 			for (let j = 0; j < nPts; j++) {
-				pts.push({
-					...sp[Math.min(j, sp.length - 1)]
-				});
+				pts.push({ ...sp[Math.min(j, sp.length - 1)] });
 			}
 			out.push(pts);
 		}
 		return out;
 	};
-	return {
-		a: norm(a),
-		b: norm(b)
-	};
+	return { a: norm(a), b: norm(b) };
 }
 
 function _lerpShapes(a, b, t) {
 	const parts = [];
 	for (let i = 0; i < a.length; i++) {
-		const sa = a[i],
-			sb = b[i];
+		const sa = a[i], sb = b[i];
 		let str = "";
 		for (let j = 0; j < sa.length; j++) {
 			const x = sa[j].x + (sb[j].x - sa[j].x) * t;
@@ -145,11 +119,8 @@ function _lerpShapes(a, b, t) {
 }
 
 function morphPath(pathEl, fromD, toD, duration = 380) {
-	if (fromD === toD) return; // 字形相同，不形变
-	const {
-		a,
-		b
-	} = _alignShapes(_samplePath(fromD), _samplePath(toD));
+	if (fromD === toD) return;
+	const { a, b } = _alignShapes(_samplePath(fromD), _samplePath(toD));
 	const start = performance.now();
 	if (pathEl._morphRaf) cancelAnimationFrame(pathEl._morphRaf);
 
@@ -163,9 +134,7 @@ function morphPath(pathEl, fromD, toD, duration = 380) {
 	pathEl._morphRaf = requestAnimationFrame(tick);
 }
 
-/* ------------------------------------------------------------
-   公共：获取 PayPal 原生支付通道
-   ------------------------------------------------------------ */
+/* 获取 PayPal 原生支付通道 */
 let _payChannel = null;
 
 function getPayPalChannel() {
@@ -183,69 +152,71 @@ function getPayPalChannel() {
 	});
 }
 
-/* ------------------------------------------------------------
-   支持的货币列表（统一驱动面板）
-   ------------------------------------------------------------ */
 const CURRENCIES = ['CNY', 'USD', 'EUR', 'GBP', 'CHF', 'JPY'];
 
 /* ============================================================
+ * 内部：拿用户 token（优先 plus.storage，其次 localStorage）
+ * ============================================================ */
+function getStoredUserToken() {
+	try {
+		if (typeof plus !== 'undefined' && plus.storage) {
+			const t = plus.storage.getItem('pylind-token');
+			if (t) return t;
+		}
+	} catch {}
+	try {
+		return localStorage.getItem('pylind-token') || '';
+	} catch {
+		return '';
+	}
+}
+
+/* ============================================================
    核心工厂
-   options:
-     mode: 'purchase' | 'donate'  （必填）
-     clientId, env, currency, amount,
-     onSuccess, onCancel, onError,
-     basePrice, baseTimes,        （仅 purchase 用）
-     donatePresets: [1,2,5,10]    （仅 donate 用，默认 [1,2,5,10]）
-     quickTimes:  [10,50,100,500] （仅 purchase 用，默认 10/50/100/500）
-     trigger,                     （可选，绑触发按钮）
-     title                        （可选，模态框标题，默认无）
    ============================================================ */
 export function createPayPalCheckout(options) {
 	ensureStyle();
 
 	const {
 		mode = 'purchase',
-			clientId,
-			env = 'sandbox',
-			currency: defaultCurrency = 'USD',
-			amount: defaultAmount,
-			onSuccess,
-			onCancel,
-			onError,
-			basePrice: bp = {
-				USD: 1,
-				CNY: 6.5,
-				EUR: 0.85,
-				GBP: 0.8,
-				CHF: 0.8,
-				JPY: 150
-			},
-			baseTimes: bt = 100,
-			donatePresets = [1, 2, 5, 10],
-			quickTimes = [10, 50, 100, 500],
-			trigger,
-			title = '',
+		clientId,
+		env = 'sandbox',
+		currency: defaultCurrency = 'USD',
+		amount: defaultAmount,
+		onSuccess,
+		onCancel,
+		onError,
+		basePrice: bp = {
+			USD: 1,
+			CNY: 6.5,
+			EUR: 0.85,
+			GBP: 0.8,
+			CHF: 0.8,
+			JPY: 150
+		},
+		baseTimes: bt = 100,
+		donatePresets = [1, 2, 5, 10],
+		quickTimes = [10, 50, 100, 500],
+		trigger,
+		title = '',
 	} = options;
 
 	if (mode !== 'purchase' && mode !== 'donate') {
 		throw new Error("mode 必须是 'purchase' 或 'donate'");
 	}
 
-	// 默认金额：购买 0.10，赞助 5
 	const initialAmount = defaultAmount != null ?
 		defaultAmount :
 		(mode === 'donate' ? 5 : 0.10);
 
-	// 服务端下单 / 捕获接口
+	// 后端下单 / 捕获接口
 	const API_BASE = env === 'live' ?
 		'https://pylind.pages.dev/api/paypal' :
 		'https://pylind.pages.dev/paypal';
 
-	// ---------- 状态 ----------
 	let currentCurrency = defaultCurrency;
 	let overlayEl = null;
 
-	// ---------- 兑换计算（仅 purchase 有意义）----------
 	function calcTimesFor(amount, currency) {
 		const base = bp[currency] || 1;
 		return Math.round(bt * (parseFloat(amount) || 0) / base);
@@ -260,14 +231,12 @@ export function createPayPalCheckout(options) {
 		return ((times / bt) * base).toFixed(2);
 	}
 
-	// ---------- 生成 HTML ----------
 	const uid = 'pp_' + Math.random().toString(36).slice(2, 9);
 
 	const quickButtonsHtml = mode === 'purchase' ?
 		quickTimes.map(t => `<button data-times="${t}">${t}</button>`).join('') :
 		donatePresets.map(v => `<button data-amount="${v}">${v}</button>`).join('');
 
-	// 用 CURRENCIES 统一生成面板项
 	const currencyOptionsHtml = CURRENCIES.map(cur => `
     <div class="currency-option${currentCurrency === cur ? ' active' : ''}" data-cur="${cur}">
       <span>${cur}</span>
@@ -304,7 +273,6 @@ export function createPayPalCheckout(options) {
 	wrapper.innerHTML = html;
 	document.body.appendChild(wrapper.firstElementChild);
 
-	// ---------- DOM 引用 ----------
 	const overlay = document.getElementById(`ppOverlay_${uid}`);
 	const closeBtn = document.getElementById(`ppClose_${uid}`);
 	const amountInput = document.getElementById(`ppAmount_${uid}`);
@@ -318,7 +286,6 @@ export function createPayPalCheckout(options) {
 
 	overlayEl = overlay;
 
-	// ---------- UI ----------
 	function updateHint() {
 		if (mode === 'purchase') {
 			const times = calcTimes(amountInput.value);
@@ -339,7 +306,6 @@ export function createPayPalCheckout(options) {
 		document.body.style.overflow = '';
 	}
 
-	// ---------- 事件 ----------
 	closeBtn.addEventListener('click', closeModal);
 	overlay.addEventListener('click', (e) => {
 		if (e.target === overlay) closeModal();
@@ -383,7 +349,6 @@ export function createPayPalCheckout(options) {
 		}
 	});
 
-	// 快捷按钮：购买=次数，赞助=金额
 	quickBox.querySelectorAll('button').forEach(btn => {
 		btn.addEventListener('click', () => {
 			if (mode === 'purchase') {
@@ -396,26 +361,37 @@ export function createPayPalCheckout(options) {
 		});
 	});
 
-	// ---------- 服务端下单 / 捕获 ----------
+	/* ---------- 服务端下单 / 捕获 ---------- */
 	async function createOrder(rawAmount, currency) {
 		const value = parseFloat(rawAmount).toFixed(2);
-		const res = await fetch(`${API_BASE}/order?amount=${value}&currency=${currency}`);
+
+		// ★ 带上用户 token
+		const token = getStoredUserToken();
+		const headers = {};
+		if (token) headers['Authorization'] = 'Bearer ' + token;
+
+		const res = await fetch(
+			`${API_BASE}/order?amount=${value}&currency=${currency}`,
+			{ method: 'GET', headers }
+		);
 		return res.text();
 	}
+
 	async function captureOrder(orderId) {
+		// ★ 也带上用户 token（后端优先从 PayPal custom_id 取，这个是备份）
+		const token = getStoredUserToken();
+		const headers = { 'Content-Type': 'application/json' };
+		if (token) headers['Authorization'] = 'Bearer ' + token;
+
 		const res = await fetch(`${API_BASE}/capture`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				orderId
-			}),
+			headers,
+			body: JSON.stringify({ orderId }),
 		});
 		return res.json();
 	}
 
-	// ---------- 发起支付 ----------
+	/* ---------- 发起支付 ---------- */
 	async function startPayment() {
 		const rawAmount = amountInput.value || (mode === 'donate' ? '5' : '10');
 		const paidAmount = parseFloat(rawAmount) || 0;
@@ -435,13 +411,9 @@ export function createPayPalCheckout(options) {
 		payBtn.textContent = 'Processing...';
 
 		try {
-			// 1. 服务端创建 PayPal 订单
 			const orderId = await createOrder(rawAmount, paidCurrency);
-
-			// 2. 获取原生通道
 			const channel = await getPayPalChannel();
 
-			// 3. 组装参数
 			const orderInfo = {
 				orderId,
 				clientId,
@@ -449,52 +421,53 @@ export function createPayPalCheckout(options) {
 				environment: env === 'live' ? 'live' : 'sandbox',
 			};
 
-			// 4. 调起原生支付
 			plus.payment.request(
 				channel,
 				orderInfo,
 				async (result) => {
-						console.log(JSON.stringify(result));
-						try {
-							const captureRes = await captureOrder(orderId);
-							if (captureRes.success) {
-								if (typeof onSuccess === 'function') {
-									const payload = {
-										data: result,
-										amount: paidAmount,
-										currency: paidCurrency,
-										result: captureRes,
-										mode,
-									};
-									if (mode === 'purchase') payload.times = earnedTimes;
-									onSuccess(payload);
-								}
-								closeModal();
-							} else {
-								const err = new Error(captureRes.error || 'Capture failed');
-								if (typeof onError === 'function') onError(err);
-								else alert('Failed: ' + err.message);
+					console.log(JSON.stringify(result));
+					try {
+						const captureRes = await captureOrder(orderId);
+						if (captureRes.success) {
+							if (typeof onSuccess === 'function') {
+								const payload = {
+									data: result,
+									amount: paidAmount,
+									currency: paidCurrency,
+									result: captureRes,
+									// 优先用后端返回的 times，前端算的是兜底
+									times: captureRes.times ?? earnedTimes,
+									credit: captureRes.credit ?? null,
+									mode,
+								};
+								onSuccess(payload);
 							}
-						} catch (err) {
-							if (typeof onError === 'function') onError(err);
-							else alert('Network error: ' + err.message);
-						} finally {
-							payBtn.disabled = false;
-							payBtn.textContent = 'PayPal';
-						}
-					},
-					(err) => {
-						const msg = (err && (err.message || err.code)) || 'payment failed';
-						const isCancel = /cancel/i.test(String(msg));
-						if (isCancel) {
-							if (typeof onCancel === 'function') onCancel();
+							closeModal();
 						} else {
-							if (typeof onError === 'function') onError(new Error(msg));
-							else alert('Error: ' + msg);
+							const err = new Error(captureRes.error || 'Capture failed');
+							if (typeof onError === 'function') onError(err);
+							else alert('Failed: ' + err.message);
 						}
+					} catch (err) {
+						if (typeof onError === 'function') onError(err);
+						else alert('Network error: ' + err.message);
+					} finally {
 						payBtn.disabled = false;
 						payBtn.textContent = 'PayPal';
 					}
+				},
+				(err) => {
+					const msg = (err && (err.message || err.code)) || 'payment failed';
+					const isCancel = /cancel/i.test(String(msg));
+					if (isCancel) {
+						if (typeof onCancel === 'function') onCancel();
+					} else {
+						if (typeof onError === 'function') onError(new Error(msg));
+						else alert('Error: ' + msg);
+					}
+					payBtn.disabled = false;
+					payBtn.textContent = 'PayPal';
+				}
 			);
 		} catch (err) {
 			console.error(err);
@@ -507,13 +480,11 @@ export function createPayPalCheckout(options) {
 
 	payBtn.addEventListener('click', startPayment);
 
-	// ---------- 绑定触发按钮 ----------
 	if (trigger) {
 		const el = typeof trigger === 'string' ? document.querySelector(trigger) : trigger;
 		if (el) el.addEventListener('click', openModal);
 	}
 
-	// ---------- 暴露 API ----------
 	return {
 		mode,
 		open: openModal,
@@ -525,22 +496,12 @@ export function createPayPalCheckout(options) {
 	};
 }
 
-/* ============================================================
-   对外：购买次数
-   ============================================================ */
 export function purchase(options = {}) {
-	return createPayPalCheckout(Object.assign({}, options, {
-		mode: 'purchase'
-	}));
+	return createPayPalCheckout(Object.assign({}, options, { mode: 'purchase' }));
 }
 
-/* ============================================================
-   对外：赞助 donate
-   ============================================================ */
 export function donate(options = {}) {
 	return createPayPalCheckout(Object.assign({
 		donatePresets: [1, 2, 5, 10],
-	}, options, {
-		mode: 'donate'
-	}));
+	}, options, { mode: 'donate' }));
 }

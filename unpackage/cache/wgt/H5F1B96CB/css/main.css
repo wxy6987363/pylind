@@ -179,7 +179,7 @@ svg {
 }
 
 /* ========== 文件列表视图 ========== */
-#file-list-view {
+#project-list-view {
 	display: none;
 	flex-direction: column;
 	width: 100%;
@@ -188,11 +188,11 @@ svg {
 	padding: 40px 24px;
 }
 
-#file-list-view.active {
+#project-list-view.active {
 	display: flex;
 }
 
-#file-list-view .header {
+#project-list-view .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -201,20 +201,20 @@ svg {
 	padding-bottom: 16px;
 }
 
-#file-list-view .header h2 {
+#project-list-view .header h2 {
 	font-weight: 400;
 	font-size: 24px;
 	color: var(--text-primary);
 	letter-spacing: 0.5px;
 }
 
-#file-list-view .header .actions {
+#project-list-view .header .actions {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-#file-list-view .header .actions button {
+#project-list-view .header .actions button {
 	background: transparent;
 	border: none;
 	color: var(--text-secondary);
@@ -229,15 +229,15 @@ svg {
 	line-height: 1;
 }
 
-#file-list-view .header .actions button:active {
+#project-list-view .header .actions button:active {
 	background: var(--bg-active);
 }
 
-#file-list-view .header .actions button svg {
+#project-list-view .header .actions button svg {
 	font-size: 22px;
 }
 
-#new-file-btn {
+#new-project-btn {
 	position: fixed;
 	bottom: 60px;
 	right: 30px;
@@ -257,19 +257,19 @@ svg {
 	padding: 0;
 }
 
-#new-file-btn:active {
+#new-project-btn:active {
 	background: var(--bg-active);
 	transform: scale(0.94);
 	box-shadow: var(--shadow-sm);
 }
 
-#new-file-btn svg {
+#new-project-btn svg {
 	display: block;
 	margin: 0;
 	font-size: 28px;
 }
 
-.file-grid {
+.project-grid {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -330,7 +330,7 @@ svg {
 }
 
 /* ========== 关于视图 ========== */
-#about-view {
+#settings-view {
 	display: none;
 	flex-direction: column;
 	width: 100%;
@@ -338,7 +338,7 @@ svg {
 	background: var(--bg-primary);
 }
 
-#about-view.active {
+#settings-view.active {
 	display: flex;
 }
 
@@ -358,14 +358,14 @@ svg {
 	color: #136a00;
 }
 
-.about-content {
+.settings-content {
 	display: flex;
 	flex-direction: column;
 	gap: 5px;
 	padding: 10px;
 }
 
-.about-list-btn {
+.settings-list-btn {
 	background: var(--bg-secondary);
 	padding: 10px 18px;
 	border-radius: var(--radius-md);
@@ -376,11 +376,11 @@ svg {
 	transition: background 0.15s;
 }
 
-.about-list-btn:active {
+.settings-list-btn:active {
 	background: var(--bg-active);
 }
 
-.about-list-btn svg {
+.settings-list-btn svg {
 	font-size: 18px;
 }
 
@@ -452,27 +452,25 @@ svg {
 	flex-shrink: 0;
 }
 
-.topbar .back-btn {
+.back-btn {
 	background: transparent;
 	border: none;
-	font-size: 22px;
-	color: var(--text-secondary);
 	flex: none;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	padding: 4px 4px;
 	border-radius: var(--radius-sm);
 	transition: background 0.15s;
 	line-height: 1;
 }
 
-.topbar .back-btn:active {
+.back-btn:active {
 	background: var(--bg-active);
 }
 
-.topbar .back-btn svg {
+.back-btn svg {
+	color: var(--text-primary);
 	font-size: 22px;
 }
 
@@ -596,7 +594,7 @@ svg {
 
 .no-tabs {
 	color: var(--text-muted);
-	font-size: 32px;
+	font-size: 12px;
 	opacity: 0.6;
 	white-space: nowrap;
 }
@@ -659,6 +657,24 @@ svg {
 
 #console-overlay.visible {
 	display: flex;
+}
+
+.clear-btn {
+	transition: transform 0.15s;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	margin-right: 4px;
+	color: var(--danger-active);
+}
+
+.clear-btn:active {
+	transform: scale(0.9);
+}
+
+.clear-btn svg {
+	font-size: 20px;
 }
 
 .close-btn {
@@ -920,26 +936,26 @@ svg {
 /* ========== 滚动条美化 ========== */
 .pypi-results::-webkit-scrollbar,
 #pypi-view::-webkit-scrollbar,
-.file-grid::-webkit-scrollbar {
+.project-grid::-webkit-scrollbar {
 	width: 6px;
 }
 
 .pypi-results::-webkit-scrollbar-track,
 #pypi-view::-webkit-scrollbar-track,
-.file-grid::-webkit-scrollbar-track {
+.project-grid::-webkit-scrollbar-track {
 	background: var(--scrollbar-track);
 }
 
 .pypi-results::-webkit-scrollbar-thumb,
 #pypi-view::-webkit-scrollbar-thumb,
-.file-grid::-webkit-scrollbar-thumb {
+.project-grid::-webkit-scrollbar-thumb {
 	background: var(--scrollbar-thumb);
 	border-radius: 3px;
 }
 
 .pypi-results::-webkit-scrollbar-thumb:hover,
 #pypi-view::-webkit-scrollbar-thumb:hover,
-.file-grid::-webkit-scrollbar-thumb:hover {
+.project-grid::-webkit-scrollbar-thumb:hover {
 	background: var(--accent);
 }
 
@@ -1970,4 +1986,525 @@ svg {
 
 .ai-toolcall-text {
 	color: inherit;
+}
+
+/* ========== 认证视图 ========== */
+#auth-view,
+#profile-view {
+	display: none;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	background: var(--bg-primary);
+}
+
+#auth-view.active,
+#profile-view.active {
+	display: flex;
+}
+
+.auth-body {
+	padding: 24px 28px 40px 28px;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.auth-header {
+	margin-bottom: 24px;
+}
+
+.auth-header h1 {
+	font-size: 24px;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin-bottom: 6px;
+}
+
+.auth-header p {
+	font-size: 14px;
+	color: var(--text-muted);
+}
+
+/* 登录方式切换 */
+.auth-mode-tabs {
+	display: flex;
+	gap: 4px;
+	background: var(--bg-elevated);
+	padding: 4px;
+	border-radius: var(--radius-lg);
+	margin-bottom: 20px;
+}
+
+.auth-mode-tab {
+	flex: 1;
+	text-align: center;
+	padding: 10px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: all 0.2s;
+	user-select: none;
+}
+
+.auth-mode-tab.active {
+	background: var(--bg-secondary);
+	color: var(--accent);
+	font-weight: 600;
+	box-shadow: var(--shadow-sm);
+}
+
+/* 表单 */
+.auth-form-group {
+	position: relative;
+	margin-bottom: 16px;
+}
+
+.auth-form-group input,
+.auth-code-row input {
+	width: 100%;
+	padding: 14px 42px 14px 14px;
+	border: 1.5px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	font-size: 15px;
+	outline: none;
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-form-group input:focus,
+.auth-code-row input:focus {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--shadow-color);
+}
+
+.auth-form-group input::placeholder,
+.auth-code-row input::placeholder {
+	color: var(--text-muted);
+}
+
+.auth-eye {
+	position: absolute;
+	right: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 22px;
+	height: 22px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	user-select: none;
+}
+
+.auth-eye svg {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
+}
+
+.auth-eye.active {
+	color: var(--accent);
+}
+
+/* 验证码行 */
+.auth-code-row {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.auth-code-row input {
+	flex: 1;
+	min-width: 0;
+	padding: 14px;
+}
+
+.auth-code-row button {
+	flex: 0 0 108px;
+	width: 108px;
+	padding: 0 8px;
+	background: var(--bg-secondary);
+	color: var(--accent);
+	border: 1.5px solid var(--accent);
+	border-radius: var(--radius-lg);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.15s, opacity 0.15s;
+}
+
+.auth-code-row button:active:not(:disabled) {
+	background: var(--bg-active);
+}
+
+.auth-code-row button:disabled {
+	background: var(--bg-elevated);
+	color: var(--text-muted);
+	border-color: var(--border-color);
+	cursor: not-allowed;
+}
+
+/* 密码规则 */
+.auth-rules {
+	margin: -4px 0 16px 4px;
+	font-size: 13px;
+	line-height: 1.8;
+}
+
+.auth-rule {
+	color: var(--danger);
+	transition: color 0.25s;
+}
+
+.auth-rule.ok {
+	color: var(--accent);
+}
+
+.auth-rule::before {
+	content: "○ ";
+	font-size: 11px;
+	vertical-align: middle;
+}
+
+.auth-rule.ok::before {
+	content: "● ";
+}
+
+/* 主按钮 */
+.auth-btn {
+	width: 100%;
+	padding: 14px;
+	background: var(--accent);
+	color: #ffffff;
+	border: none;
+	border-radius: var(--radius-lg);
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-top: 4px;
+	transition: background 0.15s, transform 0.1s;
+}
+
+.auth-btn:active {
+	background: var(--accent-active);
+	transform: scale(0.985);
+}
+
+.auth-btn:disabled {
+	background: var(--text-muted);
+	cursor: not-allowed;
+}
+
+/* 提示信息 */
+.auth-msg {
+	text-align: center;
+	margin-top: 14px;
+	font-size: 13.5px;
+	min-height: 18px;
+	line-height: 1.5;
+}
+
+.auth-msg.error {
+	color: var(--danger);
+}
+
+.auth-msg.success {
+	color: var(--accent);
+}
+
+/* 底部切换 */
+.auth-switch {
+	text-align: center;
+	margin-top: 24px;
+	font-size: 13.5px;
+	color: var(--text-muted);
+}
+
+.auth-switch a {
+	color: var(--accent);
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+/* ========== 用户信息视图 ========== */
+.profile-body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	padding: 40px 28px;
+}
+
+.profile-avatar {
+	width: 88px;
+	height: 88px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: #ffffff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 36px;
+	font-weight: 700;
+	text-transform: uppercase;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-lg);
+}
+
+.profile-name {
+	font-size: 24px;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin-bottom: 6px;
+}
+
+.profile-email {
+	font-size: 14px;
+	color: var(--text-muted);
+	margin-bottom: 40px;
+	word-break: break-all;
+}
+
+.profile-logout {
+	background: transparent;
+	color: var(--danger);
+	border: 1.5px solid var(--danger);
+	max-width: 220px;
+}
+
+.profile-logout:active {
+	background: var(--bg-active);
+	transform: scale(0.985);
+}
+
+.hidden {
+	display: none !important;
+}
+
+.profile-delete {
+	background: transparent;
+	color: var(--text-muted);
+	border: 1.5px solid var(--border-color);
+	max-width: 220px;
+	margin-top: 10px;
+}
+
+.profile-delete:active {
+	background: var(--bg-active);
+	color: var(--danger);
+	border-color: var(--danger);
+	transform: scale(0.985);
+}
+
+.profile-avatar {
+	width: 88px;
+	height: 88px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: #ffffff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 36px;
+	font-weight: 700;
+	text-transform: uppercase;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-lg);
+
+	overflow: hidden;              /* ← 让图片按圆形裁切 */
+	cursor: pointer;               /* ← 提示可点 */
+	user-select: none;
+}
+
+/* 头像里的 img */
+.profile-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+
+	/* 关键：关掉抗锯齿，保持像素风 */
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+	-ms-interpolation-mode: nearest-neighbor;
+}
+
+/* ========== 用户页余额卡片 ========== */
+.profile-balance {
+	margin-bottom: 28px;
+	padding: 16px 24px;
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	max-width: 260px;
+}
+
+.profile-balance .balance-label {
+	font-size: 20px;
+	color: var(--text-muted);
+	letter-spacing: 1.2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.profile-balance .balance-num {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--accent);
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+.profile-balance .btn {
+	margin-top: 6px;
+	padding: 8px 22px;
+	font-size: 13px;
+	border-radius: var(--radius-md);
+}
+
+/* ============================================================
+   头像编辑器（Draw Avatar）
+   ============================================================ */
+.avatar-editor-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .6);
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10001;
+	animation: avatarEditorFadeIn .18s ease;
+}
+
+@keyframes avatarEditorFadeIn {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+.avatar-editor-panel {
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-xl);
+	padding: 20px;
+	width: min(92vw, 360px);
+	box-shadow: var(--shadow-lg);
+	animation: avatarEditorPop .22s cubic-bezier(.34, 1.4, .64, 1);
+}
+
+@keyframes avatarEditorPop {
+	from { transform: scale(.92); }
+	to   { transform: scale(1); }
+}
+
+.avatar-editor-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text-primary);
+	text-align: center;
+	margin-bottom: 14px;
+}
+
+/* 8×8 网格 */
+.avatar-editor-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 3px;
+	background: var(--bg-elevated);
+	padding: 6px;
+	border-radius: var(--radius-lg);
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	margin-bottom: 14px;
+	touch-action: none;
+	user-select: none;
+}
+
+.avatar-editor-cell {
+	background: #000;
+	border-radius: 2px;
+	cursor: pointer;
+	transition: transform .08s;
+}
+
+.avatar-editor-cell:active {
+	transform: scale(1.12);
+}
+
+/* 调色板 */
+.avatar-editor-palette {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: center;
+	margin-bottom: 16px;
+}
+
+.avatar-editor-sw {
+	width: 30px;
+	height: 30px;
+	border-radius: 6px;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: .15s;
+}
+
+.avatar-editor-sw.active {
+	border-color: var(--text-primary);
+	transform: scale(1.12);
+}
+
+/* 底部按钮 */
+.avatar-editor-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.avatar-editor-btn {
+	flex: 1;
+	padding: 10px 12px;
+	border-radius: var(--radius-md);
+	border: none;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background .15s, transform .1s;
+	font-family: inherit;
+}
+
+.avatar-editor-btn:active {
+	transform: scale(.97);
+}
+
+.avatar-editor-btn.ghost {
+	background: transparent;
+	color: var(--text-primary);
+	border: 1.5px solid var(--border-color);
+}
+
+.avatar-editor-btn.ghost:active {
+	background: var(--bg-active);
+}
+
+.avatar-editor-btn.primary {
+	background: var(--accent);
+	color: #ffffff;
+}
+
+.avatar-editor-btn.primary:active {
+	background: var(--accent-active);
 }

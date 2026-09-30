@@ -1,47 +1,36 @@
 <!DOCTYPE html>
 <html lang="en-US">
+
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Pylind</title>
 
-		<!-- 1. 先加载 Monaco 的 CSS（包含字体定义） -->
-		<link rel="stylesheet"
-			href="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/editor/editor.main.min.css">
-
-		<!-- 2. 手动补上字体文件路径（关键！） -->
 		<style>
 			@font-face {
 				font-family: 'codicon';
-				src: url('https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/base/browser/ui/codicons/codicon/codicon.ttf') format('truetype');
+				src: url('css/codicon/codicon.ttf') format('truetype');
 				font-weight: normal;
 				font-style: normal;
 			}
 
-			/* 确保图标类使用正确的字体 */
 			.codicon {
 				font-family: 'codicon' !important;
-			}
-
-			/* 关闭按钮颜色修复 */
-			.monaco-find-widget .monaco-button {
-				color: #cccccc !important;
-				opacity: 1 !important;
 			}
 		</style>
 
 		<link rel="stylesheet" href="js/xterm/style.css" />
 		<link rel="stylesheet" href="css/main.css" />
 	</head>
+
 	<body>
 		<!-- 文件列表视图 -->
-		<div id="file-list-view">
+		<div id="project-list-view">
 			<div class="header">
 				<h2>Projects</h2>
 				<div class="actions">
 					<button id="pypi-btn" title="PyPI">
-						<svg viewBox="0 0 48 48" fill="none"
-							xmlns="http://www.w3.org/2000/svg">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path d="M24 4L4 14L24 24L44 14L24 4Z" stroke="currentColor" stroke-width="4"
 								stroke-linejoin="round" />
 							<path d="M4 34L24 44L44 34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -50,40 +39,8 @@
 								stroke-linejoin="round" />
 						</svg>
 					</button>
-					<button id="about-btn" title="About">
-						<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path
-								d="M10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z"
-								fill="currentColor" />
-							<path
-								d="M24 14C26.2091 14 28 12.2091 28 10C28 7.79086 26.2091 6 24 6C21.7909 6 20 7.79086 20 10C20 12.2091 21.7909 14 24 14Z"
-								fill="currentColor" />
-							<path
-								d="M38 14C40.2091 14 42 12.2091 42 10C42 7.79086 40.2091 6 38 6C35.7909 6 34 7.79086 34 10C34 12.2091 35.7909 14 38 14Z"
-								fill="currentColor" />
-							<path
-								d="M10 28C12.2091 28 14 26.2091 14 24C14 21.7909 12.2091 20 10 20C7.79086 20 6 21.7909 6 24C6 26.2091 7.79086 28 10 28Z"
-								fill="currentColor" />
-							<path
-								d="M24 28C26.2091 28 28 26.2091 28 24C28 21.7909 26.2091 20 24 20C21.7909 20 20 21.7909 20 24C20 26.2091 21.7909 28 24 28Z"
-								fill="currentColor" />
-							<path
-								d="M38 28C40.2091 28 42 26.2091 42 24C42 21.7909 40.2091 20 38 20C35.7909 20 34 21.7909 34 24C34 26.2091 35.7909 28 38 28Z"
-								fill="currentColor" />
-							<path
-								d="M10 42C12.2091 42 14 40.2091 14 38C14 35.7909 12.2091 34 10 34C7.79086 34 6 35.7909 6 38C6 40.2091 7.79086 42 10 42Z"
-								fill="currentColor" />
-							<path
-								d="M24 42C26.2091 42 28 40.2091 28 38C28 35.7909 26.2091 34 24 34C21.7909 34 20 35.7909 20 38C20 40.2091 21.7909 42 24 42Z"
-								fill="currentColor" />
-							<path
-								d="M38 42C40.2091 42 42 40.2091 42 38C42 35.7909 40.2091 34 38 34C35.7909 34 34 35.7909 34 38C34 40.2091 35.7909 42 38 42Z"
-								fill="currentColor" />
-						</svg>
-					</button>
-					<button id="import-file-btn" title="Upload Project">
-						<svg viewBox="0 0 48 48" fill="none"
-							xmlns="http://www.w3.org/2000/svg">
+					<button id="import-project-btn" title="Upload Project">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path
 								d="M24 43.9998H10C8.89543 43.9998 8 43.1043 8 41.9998V5.99976C8 4.89519 8.89543 3.99976 10 3.99976H38C39.1046 3.99976 40 4.89519 40 5.99976V23.9998"
 								stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
@@ -95,65 +52,262 @@
 							<path d="M16 23.9998H24" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
 						</svg>
 					</button>
+					<button id="user-btn" title="Account">
+						<svg viewBox="0 0 48 48" fill="none">
+							<circle cx="24" cy="16" r="8" stroke="currentColor" stroke-width="4"
+								stroke-linejoin="round" />
+							<path d="M8 42C8 34 15 28 24 28C33 28 40 34 40 42" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<button id="settings-btn" title="Settings">
+						<svg viewBox="0 0 48 48" fill="none">
+							<path
+								d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z"
+								stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							<path
+								d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z"
+								stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						</svg>
+					</button>
 				</div>
 			</div>
-			<button id="new-file-btn" title="New Project">
-				<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<button id="new-project-btn" title="New Project">
+				<svg viewBox="0 0 48 48" fill="none">
 					<path d="M24.0605 10L24.0239 38" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 						stroke-linejoin="round" />
 					<path d="M10 24L38 24" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 						stroke-linejoin="round" />
 				</svg>
 			</button>
-			<div class="file-grid" id="file-grid"></div>
+			<div class="project-grid" id="project-grid"></div>
 		</div>
 
-		<!-- 关于视图 -->
-		<div id="about-view">
+		<!-- 登录/注册视图 -->
+		<div id="auth-view">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
-						<svg viewBox="0 0 48 48" fill="none"
-							xmlns="http://www.w3.org/2000/svg">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 								stroke-linejoin="round" />
 							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
 								stroke-linecap="round" stroke-linejoin="round" />
 						</svg>
 					</button>
-					<div class="title"><span>About</span></div>
+					<div class="title"><span id="auth-title">Sign in</span></div>
 				</div>
 			</div>
 
-			<div class="about-content">
+			<div class="auth-body" id="loginBody">
+				<div class="auth-header">
+					<h1 id="auth-heading">Welcome back</h1>
+					<p id="auth-subheading">Sign in to continue.</p>
+				</div>
+
+				<div class="auth-mode-tabs" id="auth-mode-tabs">
+					<div class="auth-mode-tab active" data-mode="password" id="tab-password">Password</div>
+					<div class="auth-mode-tab" data-mode="code" id="tab-code">Email code</div>
+				</div>
+
+				<!-- 密码登录 -->
+				<div id="passwordLoginForm">
+					<div class="auth-form-group">
+						<input type="text" id="loginAccount" placeholder="Email or username" autocomplete="username">
+					</div>
+					<div class="auth-form-group">
+						<input type="password" id="loginPassword" placeholder="Password"
+							autocomplete="current-password">
+						<div class="auth-eye" id="loginEye">
+							<svg viewBox="0 0 24 24">
+								<path
+									d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z" />
+							</svg>
+						</div>
+					</div>
+					<button class="auth-btn" id="loginPasswordBtn">Sign in</button>
+				</div>
+
+				<!-- 验证码登录 -->
+				<div id="codeLoginForm" class="hidden">
+					<div class="auth-form-group">
+						<input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+					</div>
+					<div class="auth-code-row">
+						<input type="text" id="loginCode" placeholder="Verification code" maxlength="6"
+							inputmode="numeric">
+						<button id="loginSendBtn">Send</button>
+					</div>
+					<button class="auth-btn" id="loginCodeBtn">Sign in</button>
+				</div>
+
+				<div class="auth-msg" id="loginMsg"></div>
+
+				<div class="auth-switch">
+					Don't have an account? <a id="goSignupLink">Sign up</a>
+				</div>
+			</div>
+
+			<div class="auth-body hidden" id="signupBody">
+				<div class="auth-header">
+					<h1>Create account</h1>
+					<p>Just a few details to get started.</p>
+				</div>
+
+				<div class="auth-form-group">
+					<input type="text" id="signupUsername" placeholder="Username" autocomplete="username">
+				</div>
+
+				<div class="auth-form-group">
+					<input type="email" id="signupEmail" placeholder="Email" autocomplete="email">
+				</div>
+
+				<div class="auth-code-row">
+					<input type="text" id="signupCode" placeholder="Verification code" maxlength="6"
+						inputmode="numeric">
+					<button id="sendCodeBtn">Send</button>
+				</div>
+
+				<div class="auth-form-group">
+					<input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password">
+					<div class="auth-eye" id="signupEye1">
+						<svg viewBox="0 0 24 24">
+							<path
+								d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z" />
+						</svg>
+					</div>
+				</div>
+
+				<div class="auth-rules">
+					<div class="auth-rule" id="ruleLen">At least 8 characters</div>
+					<div class="auth-rule" id="ruleChar">Contains letters, numbers & symbols</div>
+				</div>
+
+				<div class="auth-form-group">
+					<input type="password" id="signupConfirm" placeholder="Confirm password"
+						autocomplete="new-password">
+					<div class="auth-eye" id="signupEye2">
+						<svg viewBox="0 0 24 24">
+							<path
+								d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z" />
+						</svg>
+					</div>
+				</div>
+
+				<button class="auth-btn" id="signupBtn">Create account</button>
+				<div class="auth-msg" id="signupMsg"></div>
+
+				<div class="auth-switch">
+					Already have an account? <a id="goLoginLink">Sign in</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- 用户信息视图 -->
+		<div id="profile-view">
+			<div class="topbar">
+				<div class="topbar-row">
+					<button class="back-btn">
+						<svg viewBox="0 0 48 48" fill="none">
+							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<div class="title"><span>Account</span></div>
+				</div>
+			</div>
+
+			<div class="profile-body">
+				<div class="profile-avatar" id="profile-avatar">W</div>
+				<div class="profile-name" id="profile-name"></div>
+				<div class="profile-email" id="profile-email"></div>
+
+				<div class="profile-balance" id="profile-balance">
+					<div class="balance-label">
+						<svg viewBox="0 0 48 48"
+							fill="none">
+							<path
+								d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
+								stroke="currentColor" stroke-width="4" />
+							<path d="M24.0002 4L41.3207 34H6.67969L24.0002 4Z" fill="none" stroke="v"
+								stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+							<path fill-rule="evenodd" clip-rule="evenodd"
+								d="M24 10C25.6569 10 27 8.65685 27 7C27 5.34315 25.6569 4 24 4C22.3431 4 21 5.34315 21 7C21 8.65685 22.3431 10 24 10Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path fill-rule="evenodd" clip-rule="evenodd"
+								d="M24 44C25.6569 44 27 42.6569 27 41C27 39.3431 25.6569 38 24 38C22.3431 38 21 39.3431 21 41C21 42.6569 22.3431 44 24 44Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path fill-rule="evenodd" clip-rule="evenodd"
+								d="M7 27C8.65685 27 10 25.6569 10 24C10 22.3431 8.65685 21 7 21C5.34315 21 4 22.3431 4 24C4 25.6569 5.34315 27 7 27Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path fill-rule="evenodd" clip-rule="evenodd"
+								d="M41 27C42.6569 27 44 25.6569 44 24C44 22.3431 42.6569 21 41 21C39.3431 21 38 22.3431 38 24C38 25.6569 39.3431 27 41 27Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path
+								d="M24.1969 15.7438C27.2874 15.7438 30.0141 14.1861 31.6346 11.813C33.5162 12.9388 35.1205 14.4804 36.3205 16.3109C33.7298 17.891 32.0002 20.7436 32.0002 24.0001C32.0002 27.3429 33.8226 30.26 36.528 31.8121C35.4049 33.6294 33.8903 35.1793 32.102 36.3441C30.5754 33.5472 27.6077 31.6499 24.1969 31.6499C20.7969 31.6499 17.8373 33.5352 16.3064 36.3175C14.4779 35.1178 12.9379 33.5146 11.813 31.6345C14.1861 30.014 15.7438 27.2873 15.7438 24.1969C15.7438 21.1166 14.1964 18.3977 11.8365 16.7753C13.0547 14.7537 14.7538 13.0547 16.7753 11.8365C18.3977 14.1964 21.1166 15.7438 24.1969 15.7438Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+						</svg>
+					</div>
+					<div class="balance-num" id="profile-balance-num">0</div>
+					<button class="avatar-editor-btn ghost" id="profile-recharge-btn">Recharge</button>
+				</div>
+
+				<button class="auth-btn profile-logout" id="logoutBtn">Sign out</button>
+				<button class="auth-btn profile-delete" id="deleteAccountBtn">Delete account</button>
+			</div>
+		</div>
+
+		<!-- 关于视图 -->
+		<div id="settings-view">
+			<div class="topbar">
+				<div class="topbar-row">
+					<button class="back-btn">
+						<svg viewBox="0 0 48 48" fill="none">
+							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+								stroke-linejoin="round" />
+							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<div class="title"><span>Settings</span></div>
+				</div>
+			</div>
+
+			<div class="settings-content">
 				<div class='about-icon' id='about-icon'>
 					<img src="res/1024.png" />
 					<div>Pylind</div>
 				</div>
-				<div id="share-btn" class="about-list-btn" title="Share App">
-					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<div id="share-btn" class="settings-list-btn" title="Share This App">
+					<svg viewBox="0 0 48 48" fill="none">
 						<path
 							d="M35 16C37.7614 16 40 13.7614 40 11C40 8.23858 37.7614 6 35 6C32.2386 6 30 8.23858 30 11C30 13.7614 32.2386 16 35 16Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 						<path
 							d="M13 29C15.7614 29 18 26.7614 18 24C18 21.2386 15.7614 19 13 19C10.2386 19 8 21.2386 8 24C8 26.7614 10.2386 29 13 29Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 						<path d="M30.0004 13.5745L17.3393 21.2454" stroke="currentColor" stroke-width="4"
 							stroke-linecap="round" stroke-linejoin="round" />
 						<path d="M17.3385 26.5639L30.6789 34.4469" stroke="currentColor" stroke-width="4"
 							stroke-linecap="round" stroke-linejoin="round" />
 						<path
 							d="M35 32C37.7614 32 40 34.2386 40 37C40 39.7614 37.7614 42 35 42C32.2386 42 30 39.7614 30 37C30 34.2386 32.2386 32 35 32Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 					</svg>
 					<span>Share</span>
 				</div>
-				<div id="update-btn" class="about-list-btn" title="Update App">
-					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<div id="update-btn" class="settings-list-btn" title="Update App">
+					<svg viewBox="0 0 48 48" fill="none">
 						<path
 							d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-							stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
 						<path
 							d="M33.5424 27C32.2681 31.0571 28.4778 34 24.0002 34C19.5226 34 15.7323 31.0571 14.458 27V33"
 							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
@@ -163,22 +317,32 @@
 					</svg>
 					<span>Check Update</span>
 				</div>
-				<div id="donate-btn" class="about-list-btn" title="Donate Us">
-					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<div id="donate-btn" class="settings-list-btn" title="Donate Us">
+					<svg viewBox="0 0 48 48" fill="none">
 						<path
 							d="M27.6 18.6V11.4C27.6 8.4 25.2 6 22.2 6L15 22.2V42H36C37.7 42 39.25 40.7 39.5 39L42 22.8C42.1 21.7 42 20.6 41.1 20C40.25 20 40 18.6 38.4 18.6H27.6Z"
 							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 						<path
 							d="M15 22.0001H10.194C8.08532 21.9628 6.2827 23.7095 6 25.7994V38.3994C6.2827 40.4894 8.08532 42.0367 10.194 41.9994H15V22.0001Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 					</svg>
-					<span>Donate Us</span>
+					<span>Donate</span>
 				</div>
 				<div class='contact'>
-					<div>Contact the Developer</div>
+					<div>Contact Us</div>
 					<div class="btn-group">
+						<div id="chatway-btn" title="Contact the developer">
+							<svg viewBox="0 0 48 48" fill="none">
+								<path d="M4 6H44V36H29L24 41L19 36H4V6Z" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M23 21H25" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+								<path d="M33.001 21H35" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+								<path d="M13.001 21H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+							</svg>
+							<span>Chat</span>
+						</div>
 						<div id="email-btn" title="Contact the developer">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path d="M44 24V9H24H4V24V39H24" stroke="currentColor" stroke-width="4"
 									stroke-linecap="round" stroke-linejoin="round" />
 								<path d="M44 34L30 34" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -190,19 +354,8 @@
 							</svg>
 							<span>Email</span>
 						</div>
-						<div id="chatway-btn" title="Contact the developer">
-							<svg viewBox="0 0 48 48"
-								fill="none" xmlns="http://www.w3.org/2000/svg">
-								<path d="M4 6H44V36H29L24 41L19 36H4V6Z" fill="none" stroke="currentColor" stroke-width="4"
-									stroke-linecap="round" stroke-linejoin="round" />
-								<path d="M23 21H25" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-								<path d="M33.001 21H35" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-								<path d="M13.001 21H15" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-							</svg>
-							<span>Chat</span>
-						</div>
 						<div id="qq-btn" title="Contact the developer">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M23.7927 44.5178C20.1344 44.5178 16.7762 43.2933 14.6142 41.4646C13.5161 41.7927 12.1115 42.3204 11.2254 42.9751C10.4664 43.535 10.5613 44.1059 10.6979 44.3362C11.298 45.3491 20.9938 44.9831 23.7927 44.6678V44.5178ZM23.7927 44.5178C27.4516 44.5178 30.8095 43.2933 32.9718 41.4646C34.0693 41.7927 35.4742 42.3204 36.3606 42.9751C37.119 43.535 37.0244 44.1059 36.8875 44.3362C36.2874 45.3491 26.5919 44.9831 23.7927 44.6678V44.5178Z"
 									fill="currentColor" />
@@ -231,8 +384,7 @@
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
-						<svg viewBox="0 0 48 48" fill="none"
-							xmlns="http://www.w3.org/2000/svg">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 								stroke-linejoin="round" />
 							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
@@ -245,10 +397,10 @@
 			<div class="pypi-search">
 				<input type="text" id="package-search" placeholder="Enter the name to search (e.g. numpy, pandas)" />
 				<button id="search-package-btn">
-					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<svg viewBox="0 0 48 48" fill="none">
 						<path
 							d="M21 38C30.3888 38 38 30.3888 38 21C38 11.6112 30.3888 4 21 4C11.6112 4 4 11.6112 4 21C4 30.3888 11.6112 38 21 38Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 						<path
 							d="M26.657 14.3431C25.2093 12.8954 23.2093 12 21.0001 12C18.791 12 16.791 12.8954 15.3433 14.3431"
 							stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
@@ -257,12 +409,12 @@
 					</svg>
 				</button>
 				<button id="install-package-btn">
-					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<svg viewBox="0 0 48 48" fill="none">
 						<path d="M41.4004 11.551L36.3332 5H11.6666L6.58398 11.551" stroke="currentColor"
 							stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
 						<path
 							d="M6 13C6 11.8954 6.89543 11 8 11H40C41.1046 11 42 11.8954 42 13V40C42 41.6569 40.6569 43 39 43H9C7.34315 43 6 41.6569 6 40V13Z"
-							fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 						<path d="M32 27L24 35L16 27" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 							stroke-linejoin="round" />
 						<path d="M23.9917 19V35" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -280,11 +432,9 @@
 		<!-- 编辑器视图 -->
 		<div id="edit-view">
 			<div class="topbar">
-				<!-- 第一行：按钮 + 标题 + 操作按钮 -->
 				<div class="topbar-row">
 					<button class="back-btn">
-						<svg viewBox="0 0 48 48" fill="none"
-							xmlns="http://www.w3.org/2000/svg">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path d="M5.79889 24H41.7989" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 								stroke-linejoin="round" />
 							<path d="M17.7988 36L5.79883 24L17.7988 12" stroke="currentColor" stroke-width="4"
@@ -292,7 +442,7 @@
 						</svg>
 					</button>
 					<button id="drawer-toggle-btn" title="Project Files">
-						<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path
 								d="M4 8C4 6.89543 4.89543 6 6 6H18L22 10H42C43.1046 10 44 10.8954 44 12V40C44 41.1046 43.1046 42 42 42H6C4.89543 42 4 41.1046 4 40V8Z"
 								stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
@@ -301,14 +451,12 @@
 					<div class="title"><span id="editor-title">No file opened</span></div>
 					<div class="btn-group">
 						<button id="save-btn" title="Save">
-							<svg viewBox="0 0 48 48" fill="none"
-								xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M6 9C6 7.34315 7.34315 6 9 6H34.2814L42 13.2065V39C42 40.6569 40.6569 42 39 42H9C7.34315 42 6 40.6569 6 39V9Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+									stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 								<path fill-rule="evenodd" clip-rule="evenodd"
-									d="M24.0083 6L24 13.3846C24 13.7245 23.5523 14 23 14H15C14.4477 14 14 13.7245 14 13.3846L14 6"
-									fill="none" />
+									d="M24.0083 6L24 13.3846C24 13.7245 23.5523 14 23 14H15C14.4477 14 14 13.7245 14 13.3846L14 6" />
 								<path
 									d="M24.0083 6L24 13.3846C24 13.7245 23.5523 14 23 14H15C14.4477 14 14 13.7245 14 13.3846L14 6H24.0083Z"
 									stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
@@ -321,8 +469,7 @@
 							</svg>
 						</button>
 						<button class="run-btn" id="run-btn" title="Run">
-							<svg viewBox="0 0 48 48" fill="none"
-								xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path fill-rule="evenodd" clip-rule="evenodd"
 									d="M41.0103 25.7308C42.3409 24.9605 42.3409 23.0395 41.0103 22.2691L9.00212 3.73804C7.66866 2.96611 6 3.92823 6 5.4689V42.5311C6 44.0718 7.66866 45.0339 9.00212 44.262L41.0103 25.7308Z"
 									fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -331,10 +478,9 @@
 						</button>
 					</div>
 				</div>
-				<!-- 第二行：选项卡 -->
 				<div class="tabs-row tabs-container" id="tabs-container">
 					<div class="tabs-scroll" id="tabs-scroll">
-						<span class="no-tabs">No files opened</span>
+						<span class="no-tabs">No file opened</span>
 					</div>
 				</div>
 			</div>
@@ -346,7 +492,7 @@
 						</div>
 						<div class="drawer-toolbar">
 							<button id="drawer-new-file-btn" title="New File">
-								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<svg viewBox="0 0 48 48" fill="none">
 									<path d="M40 23V14L31 4H10C8.89543 4 8 4.89543 8 6V42C8 43.1046 8.89543 44 10 44H22"
 										stroke="currentColor" stroke-width="4" stroke-linecap="round"
 										stroke-linejoin="round" />
@@ -359,7 +505,7 @@
 								</svg>
 							</button>
 							<button id="drawer-import-file-btn" title="Import Files">
-								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<svg viewBox="0 0 48 48" fill="none">
 									<mask id="icon-83f6f557f10b972" maskUnits="userSpaceOnUse" x="0" y="0" width="48"
 										height="48" style="mask-type: alpha">
 										<path d="M48 0H0V48H48V0Z" fill="currentColor" />
@@ -375,7 +521,7 @@
 								</svg>
 							</button>
 							<button id="drawer-new-folder-btn" title="New Folder">
-								<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<svg viewBox="0 0 48 48" fill="none">
 									<path
 										d="M4 8C4 6.89543 4.89543 6 6 6H18L22 10H42C43.1046 10 44 10.8954 44 12V40C44 41.1046 43.1046 42 42 42H6C4.89543 42 4 41.1046 4 40V8Z"
 										stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
@@ -392,7 +538,7 @@
 				<div id="code-area">
 					<div class="toolbar" id="toolbar">
 						<button class="toolbar-btn" data-action="tab">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path d="M42 9H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path d="M29 19H6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -406,10 +552,10 @@
 							</svg>
 						</button>
 						<button class="toolbar-btn" data-action="find">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M21 38C30.3888 38 38 30.3888 38 21C38 11.6112 30.3888 4 21 4C11.6112 4 4 11.6112 4 21C4 30.3888 11.6112 38 21 38Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+									stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
 								<path
 									d="M26.657 14.3431C25.2093 12.8954 23.2093 12 21.0001 12C18.791 12 16.791 12.8954 15.3433 14.3431"
 									stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -419,7 +565,7 @@
 							</svg>
 						</button>
 						<button class="toolbar-btn" data-action="replace">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path d="M42 19H5.99998" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path d="M30 7L42 19" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -431,7 +577,7 @@
 							</svg>
 						</button>
 						<button class="toolbar-btn" data-action="undo">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M11.2721 36.7279C14.5294 39.9853 19.0294 42 24 42C33.9411 42 42 33.9411 42 24C42 14.0589 33.9411 6 24 6C19.0294 6 14.5294 8.01472 11.2721 11.2721C9.61407 12.9301 6 17 6 17"
 									stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -441,7 +587,7 @@
 							</svg>️
 						</button>
 						<button class="toolbar-btn" data-action="redo">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M36.7279 36.7279C33.4706 39.9853 28.9706 42 24 42C14.0589 42 6 33.9411 6 24C6 14.0589 14.0589 6 24 6C28.9706 6 33.4706 8.01472 36.7279 11.2721C38.3859 12.9301 42 17 42 17"
 									stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -451,83 +597,64 @@
 							</svg>️
 						</button>
 						<button class="toolbar-btn" data-action="format">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<rect x="8" y="24" width="32" height="18" stroke="currentColor" stroke-width="4"
 									stroke-linecap="round" stroke-linejoin="round" />
-								<path d="M4 13H18V6H30V13H44V24H4V13Z" fill="none" stroke="currentColor"
-									stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M4 13H18V6H30V13H44V24H4V13Z" stroke="currentColor" stroke-width="4"
+									stroke-linecap="round" stroke-linejoin="round" />
 								<path d="M16 32L16 42" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
 							</svg>
 						</button>
 						<button class="toolbar-btn" data-action="ai">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path
 									d="M23.9999 24V12M23.9999 24L13.5 30.0621L23.9999 24ZM23.9999 24L34.4998 30.0621L23.9999 24Z"
 									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M14 16C14 18.2091 12.2091 20 10 20C7.79086 20 6 18.2091 6 16C6 13.7909 7.79086 12 10 12C12.2091 12 14 13.7909 14 16Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M14 32C14 34.2091 12.2091 36 10 36C7.79086 36 6 34.2091 6 32C6 29.7909 7.79086 28 10 28C12.2091 28 14 29.7909 14 32Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M28 40C28 42.2091 26.2091 44 24 44C21.7909 44 20 42.2091 20 40C20 37.7909 21.7909 36 24 36C26.2091 36 28 37.7909 28 40Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M42 32C42 34.2091 40.2091 36 38 36C35.7909 36 34 34.2091 34 32C34 29.7909 35.7909 28 38 28C40.2091 28 42 29.7909 42 32Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M42 16C42 18.2091 40.2091 20 38 20C35.7909 20 34 18.2091 34 16C34 13.7909 35.7909 12 38 12C40.2091 12 42 13.7909 42 16Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path
 									d="M28 8C28 10.2091 26.2091 12 24 12C21.7909 12 20 10.2091 20 8C20 5.79086 21.7909 4 24 4C26.2091 4 28 5.79086 28 8Z"
-									fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+									stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 							</svg>
 						</button>
 					</div>
+
 					<!-- AI 侧边栏 -->
 					<div id="ai-sidebar">
 						<div class="topbar">
 							<div class="topbar-row">
 								<div class="title"><span>AI Agent</span></div>
-								<div id="ai-credit-display" class='ai-credit-info payai-btn'>
-									<svg class="credit-icon" viewBox="0 0 48 48" fill="none"
-										xmlns="http://www.w3.org/2000/svg">
-										<path fill-rule="evenodd" clip-rule="evenodd"
-											d="M24 10C25.6569 10 27 8.65685 27 7C27 5.34315 25.6569 4 24 4C22.3431 4 21 5.34315 21 7C21 8.65685 22.3431 10 24 10Z"
-											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-											stroke-linejoin="round" />
-										<path fill-rule="evenodd" clip-rule="evenodd"
-											d="M24 44C25.6569 44 27 42.6569 27 41C27 39.3431 25.6569 38 24 38C22.3431 38 21 39.3431 21 41C21 42.6569 22.3431 44 24 44Z"
-											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-											stroke-linejoin="round" />
-										<path fill-rule="evenodd" clip-rule="evenodd"
-											d="M7 27C8.65685 27 10 25.6569 10 24C10 22.3431 8.65685 21 7 21C5.34315 21 4 22.3431 4 24C4 25.6569 5.34315 27 7 27Z"
-											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-											stroke-linejoin="round" />
-										<path fill-rule="evenodd" clip-rule="evenodd"
-											d="M41 27C42.6569 27 44 25.6569 44 24C44 22.3431 42.6569 21 41 21C39.3431 21 38 22.3431 38 24C38 25.6569 39.3431 27 41 27Z"
-											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-											stroke-linejoin="round" />
-										<path
-											d="M24.1969 15.7438C27.2874 15.7438 30.0141 14.1861 31.6346 11.813C33.5162 12.9388 35.1205 14.4804 36.3205 16.3109C33.7298 17.891 32.0002 20.7436 32.0002 24.0001C32.0002 27.3429 33.8226 30.26 36.528 31.8121C35.4049 33.6294 33.8903 35.1793 32.102 36.3441C30.5754 33.5472 27.6077 31.6499 24.1969 31.6499C20.7969 31.6499 17.8373 33.5352 16.3064 36.3175C14.4779 35.1178 12.9379 33.5146 11.813 31.6345C14.1861 30.014 15.7438 27.2873 15.7438 24.1969C15.7438 21.1166 14.1964 18.3977 11.8365 16.7753C13.0547 14.7537 14.7538 13.0547 16.7753 11.8365C18.3977 14.1964 21.1166 15.7438 24.1969 15.7438Z"
-											fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-											stroke-linejoin="round" />
-										<path
-											d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
-											stroke="currentColor" stroke-width="4" />
+								<div class="clear-btn" id="clear-history-btn" title="Clear history">
+									<svg viewBox="0 0 48 48" fill="none">
+										<path d="M9 10H39" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+										<path d="M13 10V40C13 41.1046 13.8954 42 15 42H33C34.1046 42 35 41.1046 35 40V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M19 10V6C19 4.89543 19.8954 4 21 4H27C28.1046 4 29 4.89543 29 6V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M21 20V34" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+										<path d="M27 20V34" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
 									</svg>
-									<span id="credit-count">10</span>
 								</div>
 								<div class="close-btn" id="close-ai-sidebar">
-									<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<svg viewBox="0 0 48 48" fill="none">
 										<path d="M8 8L40 40" stroke="currentColor" stroke-width="4"
 											stroke-linecap="round" stroke-linejoin="round" />
 										<path d="M8 40L40 8" stroke="currentColor" stroke-width="4"
@@ -558,7 +685,7 @@
 					<div class="topbar-row">
 						<div class="title"><span>Console</span></div>
 						<div class="close-btn" id="close-console-btn">
-							<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<svg viewBox="0 0 48 48" fill="none">
 								<path d="M8 8L40 40" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 									stroke-linejoin="round" />
 								<path d="M8 40L40 8" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -574,15 +701,16 @@
 
 		<script type='importmap'>
 			{
-				"imports": {
-					"pyodide": "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.mjs",
-					"monaco": "./js/monaco/dist/index.mjs",
-					"monaco/workers/editor": "./js/monaco/dist/workers/editor.mjs",
-					"monaco/workers/typescript": "./js/monaco/dist/workers/typescript.mjs",
-					"monaco-editor": "https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/+esm"
-				}
+			"imports": {
+				"pyodide": "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.mjs",
+				"monaco": "./js/monaco/dist/index.mjs",
+				"monaco/workers/editor": "./js/monaco/dist/workers/editor.mjs",
+				"monaco/workers/typescript": "./js/monaco/dist/workers/typescript.mjs",
+				"monaco-editor": "https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/+esm"
 			}
-		</script>
+		}
+	</script>
 		<script src="js/main.js" type="module"></script>
 	</body>
+
 </html>

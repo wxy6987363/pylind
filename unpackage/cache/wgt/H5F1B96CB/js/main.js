@@ -52,13 +52,6 @@ monaco.languages.registerCompletionItemProvider('python', {
 
 	provideCompletionItems: function(model, position) {
 		const word = model.getWordUntilPosition(position);
-		const range = {
-			startLineNumber: position.lineNumber,
-			endLineNumber: position.lineNumber,
-			startColumn: word.startColumn,
-			endColumn: word.endColumn
-		};
-
 		const textBeforeCursor = model.getValueInRange({
 			startLineNumber: position.lineNumber,
 			startColumn: 1,
@@ -170,7 +163,7 @@ monaco.languages.registerCompletionItemProvider('python', {
 			['enumerate', 'enumerate(${1:iterable})', 'Function', '(iterable: Iterable) -> enumerate',
 				'Enumerate iterable', 'b'
 			],
-			['zip', 'zip(${1:iterable1}, ${2:iterable2})', 'Function', '(*iterables) -> zip',
+			['zip', 'zip(${1:iter1}, ${2:iter2})', 'Function', '(*iterables) -> zip',
 				'Zip multiple iterables', 'b'
 			],
 			['open', 'open(${1:filepath}, "${2:mode}")', 'Function', '(file: str, mode: str) -> file',
@@ -344,13 +337,11 @@ monaco.languages.registerCompletionItemProvider('python', {
 	}
 });
 
-
-
-const initApp = (async function() {
+const initApp = async function() {
 	// ----- DOM refs -----
-	const fileGrid = document.getElementById('file-grid');
-	const newFileBtn = document.getElementById('new-file-btn');
-	const importFileBtn = document.getElementById('import-file-btn');
+	const projectGrid = document.getElementById('project-grid');
+	const newProjectBtn = document.getElementById('new-project-btn');
+	const importProjectBtn = document.getElementById('import-project-btn');
 	const editView = document.getElementById('edit-view');
 	const editorTitle = document.getElementById('editor-title');
 	const backBtns = document.getElementsByClassName('back-btn');
@@ -375,7 +366,7 @@ const initApp = (async function() {
 	// ----- PyPI DOM refs -----
 	const pypiView = document.getElementById('pypi-view');
 	const pypiBtn = document.getElementById('pypi-btn');
-	const aboutBtn = document.getElementById('about-btn');
+	const settingsBtn = document.getElementById('settings-btn');
 
 	const packageSearch = document.getElementById('package-search');
 	const searchPackageBtn = document.getElementById('search-package-btn');
@@ -388,23 +379,905 @@ const initApp = (async function() {
 
 	const isDarkMode = matchMedia('(prefers-color-scheme: dark)');
 
+	// ============================================================
+	// 认证模块
+	// ============================================================
+
+	// ---------- 1. 常量 ----------
+	const AUTH_API_BASE = 'https://pylind.pages.dev';
+	const AUTH_API_TOKEN = '57b43a1858f7b562f103599872a432ce57afd5fa6180d20cd66084712aadd2fc';
+	const AUTH_STORAGE_KEY = 'pylind-user';
+	const AUTH_TOKEN_KEY = 'pylind-token';
+
+	// ---------- 2. DOM 引用 ----------
+	const authTitle = document.getElementById('auth-title');
+	const loginBody = document.getElementById('loginBody');
+	const signupBody = document.getElementById('signupBody');
+	const authModeTabs = document.getElementById('auth-mode-tabs');
+
+	const tabPassword = document.getElementById('tab-password');
+	const tabCode = document.getElementById('tab-code');
+
+	const passwordLoginForm = document.getElementById('passwordLoginForm');
+	const codeLoginForm = document.getElementById('codeLoginForm');
+
+	const loginAccount = document.getElementById('loginAccount');
+	const loginPassword = document.getElementById('loginPassword');
+	const loginEye = document.getElementById('loginEye');
+	const loginPasswordBtn = document.getElementById('loginPasswordBtn');
+
+	const loginEmail = document.getElementById('loginEmail');
+	const loginCode = document.getElementById('loginCode');
+	const loginSendBtn = document.getElementById('loginSendBtn');
+	const loginCodeBtn = document.getElementById('loginCodeBtn');
+
+	const loginMsg = document.getElementById('loginMsg');
+
+	const goSignupLink = document.getElementById('goSignupLink');
+	const goLoginLink = document.getElementById('goLoginLink');
+
+	const signupUsername = document.getElementById('signupUsername');
+	const signupEmail = document.getElementById('signupEmail');
+	const signupCode = document.getElementById('signupCode');
+	const sendCodeBtn = document.getElementById('sendCodeBtn');
+	const signupPassword = document.getElementById('signupPassword');
+	const signupEye1 = document.getElementById('signupEye1');
+	const signupConfirm = document.getElementById('signupConfirm');
+	const signupEye2 = document.getElementById('signupEye2');
+	const signupBtn = document.getElementById('signupBtn');
+	const signupMsg = document.getElementById('signupMsg');
+	const ruleLen = document.getElementById('ruleLen');
+	const ruleChar = document.getElementById('ruleChar');
+
+	const userBtn = document.getElementById('user-btn');
+
+	const profileAvatar = document.getElementById('profile-avatar');
+	const profileName = document.getElementById('profile-name');
+	const profileEmail = document.getElementById('profile-email');
+	const profileBalanceNum = document.getElementById('profile-balance-num');
+	const profileRechargeBtn = document.getElementById('profile-recharge-btn');
+	const logoutBtn = document.getElementById('logoutBtn');
+	const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+	// ---------- 3. 存储 ----------
+	function getStoredUser() {
+		try {
+			const raw = plus.storage.getItem(AUTH_STORAGE_KEY);
+			if (!raw) return null;
+			return JSON.parse(raw);
+		} catch {
+			return null;
+		}
+	}
+
+	function setStoredUser(user) {
+		try {
+			plus.storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+		} catch (e) {
+			console.warn('[Auth] save user failed:', e);
+		}
+	}
+
+	function clearStoredUser() {
+		try {
+			plus.storage.removeItem(AUTH_STORAGE_KEY);
+		} catch {}
+	}
+
+	function getStoredToken() {
+		try {
+			return plus.storage.getItem(AUTH_TOKEN_KEY) || '';
+		} catch {
+			return '';
+		}
+	}
+
+	function setStoredToken(token) {
+		try {
+			plus.storage.setItem(AUTH_TOKEN_KEY, token || '');
+		} catch (e) {
+			console.warn('[Auth] save token failed:', e);
+		}
+	}
+
+	function clearStoredToken() {
+		try {
+			plus.storage.removeItem(AUTH_TOKEN_KEY);
+		} catch {}
+	}
+
+	// ---------- 4. 工具 ----------
+	function isEmail(v) {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+	}
+
+	function isUsername(v) {
+		return /^[a-zA-Z0-9_]{3,20}$/.test(v);
+	}
+
+	function setAuthMsg(el, text, type = '') {
+		if (!el) return;
+		el.textContent = text;
+		el.className = 'auth-msg ' + type;
+	}
+
+	function bindAuthEye(eye, input) {
+		if (!eye || !input) return;
+		const show = (e) => {
+			e.preventDefault();
+			input.type = 'text';
+			eye.classList.add('active');
+		};
+		const hide = (e) => {
+			e.preventDefault();
+			input.type = 'password';
+			eye.classList.remove('active');
+		};
+		eye.addEventListener('touchstart', show, {
+			passive: false
+		});
+		eye.addEventListener('touchend', hide);
+		eye.addEventListener('touchcancel', hide);
+		eye.addEventListener('mousedown', show);
+		eye.addEventListener('mouseup', hide);
+		eye.addEventListener('mouseleave', hide);
+	}
+
+	function checkPasswordRules(pwd) {
+		const hasLen = pwd.length >= 8;
+		const hasNum = /\d/.test(pwd);
+		const hasLetter = /[a-zA-Z]/.test(pwd);
+		const hasSymbol = /[^a-zA-Z0-9]/.test(pwd);
+		const hasChar = hasNum && hasLetter && hasSymbol;
+
+		if (ruleLen) ruleLen.classList.toggle('ok', hasLen);
+		if (ruleChar) ruleChar.classList.toggle('ok', hasChar);
+
+		return hasLen && hasChar;
+	}
+
+	let authCooldownTimer = null;
+
+	function startAuthCooldown(btn, defaultText) {
+		if (!btn) return;
+		let left = 60;
+		btn.textContent = left + 's';
+		clearInterval(authCooldownTimer);
+		authCooldownTimer = setInterval(() => {
+			left--;
+			if (left <= 0) {
+				clearInterval(authCooldownTimer);
+				btn.disabled = false;
+				btn.textContent = defaultText;
+			} else {
+				btn.textContent = left + 's';
+			}
+		}, 1000);
+	}
+
+	// ---------- 5. 视图切换 ----------
+	function openAuthView() {
+		togglePage('auth');
+		showLoginForm();
+	}
+
+	function openProfileView() {
+		const user = getStoredUser();
+		if (!user) {
+			openAuthView();
+			return;
+		}
+		if (profileName) profileName.textContent = user.username || '';
+		if (profileEmail) profileEmail.textContent = user.email || '';
+		renderProfileAvatar(user);
+		togglePage('profile');
+		loadBalance();
+	}
+
+	function renderProfileAvatar(user) {
+		if (!profileAvatar) return;
+
+		profileAvatar.innerHTML = '';
+
+		if (!user) {
+			profileAvatar.textContent = 'U';
+			return;
+		}
+
+		if (user.id) {
+			const img = document.createElement('img');
+			img.alt = user.username || 'avatar';
+			img.width = 88;
+			img.height = 88;
+			img.draggable = false;
+			img.src = `${AUTH_API_BASE}/api/account/avatar?id=${encodeURIComponent(user.id)}&t=${Date.now()}`;
+			img.onerror = () => {
+				profileAvatar.innerHTML = '';
+				profileAvatar.textContent =
+					(user.username?.[0] || user.email?.[0] || 'U').toUpperCase();
+			};
+			profileAvatar.appendChild(img);
+		} else {
+			profileAvatar.textContent =
+				(user.username?.[0] || user.email?.[0] || 'U').toUpperCase();
+		}
+	}
+
+	function showLoginForm() {
+		if (authTitle) authTitle.textContent = 'Sign in';
+		if (loginBody) loginBody.classList.remove('hidden');
+		if (signupBody) signupBody.classList.add('hidden');
+		if (authModeTabs) authModeTabs.classList.remove('hidden');
+
+		if (loginMsg) loginMsg.textContent = '';
+		if (signupMsg) signupMsg.textContent = '';
+	}
+
+	function showSignupForm() {
+		if (authTitle) authTitle.textContent = 'Sign up';
+		if (loginBody) loginBody.classList.add('hidden');
+		if (signupBody) signupBody.classList.remove('hidden');
+
+		if (loginMsg) loginMsg.textContent = '';
+		if (signupMsg) signupMsg.textContent = '';
+	}
+
+	function switchLoginMode(mode) {
+		if (tabPassword) tabPassword.classList.toggle('active', mode === 'password');
+		if (tabCode) tabCode.classList.toggle('active', mode === 'code');
+
+		if (passwordLoginForm) passwordLoginForm.classList.toggle('hidden', mode !== 'password');
+		if (codeLoginForm) codeLoginForm.classList.toggle('hidden', mode !== 'code');
+
+		if (loginMsg) loginMsg.textContent = '';
+	}
+
+	// ---------- 6. 网络请求 ----------
+	async function authFetch(path, body) {
+		const res = await fetch(`${AUTH_API_BASE}${path}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': 'Bearer ' + AUTH_API_TOKEN,
+			},
+			body: JSON.stringify(body),
+		});
+		return res.json();
+	}
+
+	// ---------- 7. 发送验证码 ----------
+	async function sendSignupCode() {
+		const email = signupEmail.value.trim();
+		if (!isEmail(email)) {
+			setAuthMsg(signupMsg, 'Please enter a valid email', 'error');
+			return;
+		}
+		if (sendCodeBtn.disabled) return;
+
+		sendCodeBtn.disabled = true;
+		sendCodeBtn.textContent = 'Sending...';
+
+		try {
+			const data = await authFetch('/api/email/send', {
+				email
+			});
+			if (data.success) {
+				setAuthMsg(signupMsg, 'Code sent, please check your inbox', 'success');
+				startAuthCooldown(sendCodeBtn, 'Send code');
+			} else {
+				setAuthMsg(signupMsg, data.error || 'Failed to send', 'error');
+				sendCodeBtn.disabled = false;
+				sendCodeBtn.textContent = 'Send code';
+			}
+		} catch (e) {
+			setAuthMsg(signupMsg, 'Network error', 'error');
+			sendCodeBtn.disabled = false;
+			sendCodeBtn.textContent = 'Send code';
+		}
+	}
+
+	async function sendLoginCode() {
+		const email = loginEmail.value.trim();
+		if (!isEmail(email)) {
+			setAuthMsg(loginMsg, 'Please enter a valid email', 'error');
+			return;
+		}
+		if (loginSendBtn.disabled) return;
+
+		loginSendBtn.disabled = true;
+		loginSendBtn.textContent = 'Sending...';
+
+		try {
+			const data = await authFetch('/api/email/send-login', {
+				email
+			});
+			if (data.success) {
+				setAuthMsg(loginMsg, 'Code sent, please check your inbox', 'success');
+				startAuthCooldown(loginSendBtn, 'Send code');
+			} else {
+				setAuthMsg(loginMsg, data.error || 'Failed to send', 'error');
+				loginSendBtn.disabled = false;
+				loginSendBtn.textContent = 'Send code';
+			}
+		} catch (e) {
+			setAuthMsg(loginMsg, 'Network error', 'error');
+			loginSendBtn.disabled = false;
+			loginSendBtn.textContent = 'Send code';
+		}
+	}
+
+	// ---------- 8. 登录 ----------
+	async function doLoginPassword() {
+		const account = loginAccount.value.trim();
+		const password = loginPassword.value;
+
+		if (!account || !password) {
+			setAuthMsg(loginMsg, 'Please fill in all fields', 'error');
+			return;
+		}
+
+		try {
+			const data = await authFetch('/api/account/login', {
+				mode: 'password',
+				account,
+				password,
+			});
+			if (data.success) {
+				setStoredUser(data.user);
+				setStoredToken(data.token);
+
+				try {
+					loadAndRenderHistory({
+						token: data.token
+					});
+					console.log('[AI] history loaded:', aiClient.history.length);
+				} catch (e) {
+					console.warn('[AI] load history failed:', e);
+				}
+
+				openProfileView();
+			} else {
+				setAuthMsg(loginMsg, data.error || 'Sign in failed', 'error');
+			}
+		} catch (e) {
+			setAuthMsg(loginMsg, 'Network error', 'error');
+		}
+	}
+
+	async function doLoginCode() {
+		const email = loginEmail.value.trim();
+		const code = loginCode.value.trim();
+
+		if (!email || !code) {
+			setAuthMsg(loginMsg, 'Please fill in all fields', 'error');
+			return;
+		}
+		if (!isEmail(email)) {
+			setAuthMsg(loginMsg, 'Invalid email', 'error');
+			return;
+		}
+		if (!/^\d{6}$/.test(code)) {
+			setAuthMsg(loginMsg, 'Code must be 6 digits', 'error');
+			return;
+		}
+
+		try {
+			const data = await authFetch('/api/account/login', {
+				mode: 'code',
+				email,
+				code,
+			});
+			if (data.success) {
+				setStoredUser(data.user);
+				setStoredToken(data.token);
+
+				// ★ 加载 AI 历史
+				aiClient.token = data.token;
+				try {
+					loadAndRenderHistory({
+						token: data.token
+					});
+					console.log('[AI] history loaded:', aiClient.history.length);
+				} catch (e) {
+					console.warn('[AI] load history failed:', e);
+				}
+
+				openProfileView();
+			} else {
+				setAuthMsg(loginMsg, data.error || 'Sign in failed', 'error');
+			}
+		} catch (e) {
+			setAuthMsg(loginMsg, 'Network error', 'error');
+		}
+	}
+
+	// ---------- 9. 注册 ----------
+	async function doSignup() {
+		const username = signupUsername.value.trim();
+		const email = signupEmail.value.trim();
+		const code = signupCode.value.trim();
+		const password = signupPassword.value;
+		const confirm = signupConfirm.value;
+
+		if (!username || !email || !code || !password) {
+			setAuthMsg(signupMsg, 'Please fill in all fields', 'error');
+			return;
+		}
+		if (!isUsername(username)) {
+			setAuthMsg(signupMsg, 'Username must be 3-20 letters, numbers or underscores', 'error');
+			return;
+		}
+		if (!isEmail(email)) {
+			setAuthMsg(signupMsg, 'Invalid email', 'error');
+			return;
+		}
+		if (!/^\d{6}$/.test(code)) {
+			setAuthMsg(signupMsg, 'Code must be 6 digits', 'error');
+			return;
+		}
+		if (!checkPasswordRules(password)) {
+			setAuthMsg(signupMsg, 'Password does not meet requirements', 'error');
+			return;
+		}
+		if (password !== confirm) {
+			setAuthMsg(signupMsg, 'Passwords do not match', 'error');
+			return;
+		}
+
+		try {
+			const data = await authFetch('/api/account/signup', {
+				email,
+				username,
+				password,
+				code,
+			});
+
+			if (data.success) {
+				setAuthMsg(signupMsg, 'Account created, please sign in', 'success');
+
+				signupUsername.value = '';
+				signupEmail.value = '';
+				signupCode.value = '';
+				signupPassword.value = '';
+				signupConfirm.value = '';
+
+				loginAccount.value = email;
+				loginEmail.value = email;
+
+				setTimeout(() => {
+					showLoginForm();
+					setAuthMsg(loginMsg, 'Account created, please sign in', 'success');
+				}, 800);
+			} else {
+				setAuthMsg(signupMsg, data.error || 'Sign up failed', 'error');
+			}
+		} catch (e) {
+			setAuthMsg(signupMsg, 'Network error', 'error');
+		}
+	}
+
+	// ---------- 10. 退出（带服务端 token 删除） ----------
+	async function doLogout() {
+		const token = getStoredToken();
+
+		if (token) {
+			try {
+				await fetch(`${AUTH_API_BASE}/api/account/logout`, {
+					method: 'POST',
+					headers: {
+						'Authorization': 'Bearer ' + token,
+					},
+				});
+			} catch (e) {
+				console.warn('[Logout] server logout failed:', e);
+			}
+		}
+
+		clearStoredUser();
+		clearStoredToken();
+		setBalanceDisplay(0);
+		togglePage('projects');
+		renderProjectList();
+	}
+
+	function doDeleteAccount() {
+		const user = getStoredUser();
+		if (!user) {
+			openAuthView();
+			return;
+		}
+
+		plus.nativeUI.prompt(
+			'Enter your password to confirm account deletion. This cannot be undone.',
+			async function(e) {
+					if (e.index !== 0) return;
+					const password = (e.value || '').trim();
+					if (!password) {
+						plus.nativeUI.toast('Password is required');
+						return;
+					}
+
+					plus.nativeUI.showWaiting('Deleting...');
+					try {
+						const res = await fetch(`${AUTH_API_BASE}/api/account/delete`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': 'Bearer ' + AUTH_API_TOKEN,
+							},
+							body: JSON.stringify({
+								email: user.email,
+								password
+							}),
+						});
+						const data = await res.json();
+						plus.nativeUI.closeWaiting();
+
+						if (data.success) {
+							clearStoredUser();
+							clearStoredToken();
+							setBalanceDisplay(0);
+							plus.nativeUI.toast('Account deleted');
+							togglePage('projects');
+							renderProjectList();
+						} else {
+							plus.nativeUI.toast(data.error || 'Delete failed');
+						}
+					} catch (err) {
+						plus.nativeUI.closeWaiting();
+						plus.nativeUI.toast('Network error');
+					}
+				},
+				'Delete Account',
+				'',
+				['Delete', 'Cancel']
+		);
+	}
+
+	// ---------- 11. 头像操作 ----------
+	function changeAvatarMenu() {
+		const user = getStoredUser();
+		const token = getStoredToken();
+		if (!user) {
+			openAuthView();
+			return;
+		}
+		if (!token) {
+			plus.nativeUI.toast('Please sign in again');
+			return;
+		}
+
+		plus.nativeUI.actionSheet({
+			title: 'Avatar',
+			cancel: 'Cancel',
+			buttons: [{
+					title: 'Random'
+				},
+				{
+					title: 'Draw'
+				}
+			]
+		}, function(res) {
+			if (res.index === 1) {
+				doRandomAvatar();
+			} else if (res.index === 2) {
+				openAvatarEditor();
+			}
+		});
+	}
+
+	async function doRandomAvatar() {
+		const user = getStoredUser();
+		const token = getStoredToken();
+		if (!user || !token) return;
+
+		plus.nativeUI.showWaiting('Saving...');
+		try {
+			const res = await fetch(`${AUTH_API_BASE}/api/account/avatar`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': 'Bearer ' + token,
+				},
+				body: JSON.stringify({
+					regenerate: true
+				}),
+			});
+			const data = await res.json();
+			plus.nativeUI.closeWaiting();
+
+			if (data.success) {
+				renderProfileAvatar(user);
+				plus.nativeUI.toast('Avatar updated');
+			} else {
+				plus.nativeUI.toast(data.error || 'Failed');
+			}
+		} catch (err) {
+			plus.nativeUI.closeWaiting();
+			plus.nativeUI.toast('Network error');
+		}
+	}
+
+	// ----- 手绘 8x8 头像编辑器 -----
+	const AVATAR_COLORS = [
+		[0, 0, 0],
+		[255, 255, 255],
+		[220, 60, 60],
+		[255, 160, 60],
+		[250, 220, 70],
+		[80, 200, 100],
+		[70, 150, 240],
+		[160, 100, 220],
+	];
+
+	let avatarEditorOverlay = null;
+	let avatarEditorState = Array.from({
+		length: 8
+	}, () => Array(8).fill(0));
+	let avatarEditorCurrentColor = 2;
+
+	async function openAvatarEditor() {
+		const user = getStoredUser();
+		if (!user || !user.id) return;
+
+		let pixels = null;
+		try {
+			const res = await fetch(
+				`${AUTH_API_BASE}/api/account/avatar?id=${encodeURIComponent(user.id)}&format=json&t=${Date.now()}`
+			);
+			const data = await res.json();
+			if (data.success && Array.isArray(data.avatar)) {
+				pixels = data.avatar;
+			}
+		} catch {}
+
+		if (pixels && pixels.length === 192) {
+			for (let r = 0; r < 8; r++) {
+				for (let c = 0; c < 8; c++) {
+					const i = (r * 8 + c) * 3;
+					const rgb = [pixels[i], pixels[i + 1], pixels[i + 2]];
+					let idx = 0;
+					let best = Infinity;
+					AVATAR_COLORS.forEach((col, j) => {
+						const d = (col[0] - rgb[0]) ** 2 + (col[1] - rgb[1]) ** 2 + (col[2] -
+							rgb[2]) ** 2;
+						if (d < best) {
+							best = d;
+							idx = j;
+						}
+					});
+					avatarEditorState[r][c] = idx;
+				}
+			}
+		} else {
+			avatarEditorState = Array.from({
+				length: 8
+			}, () => Array(8).fill(0));
+		}
+
+		buildAvatarEditorDOM();
+	}
+
+	function buildAvatarEditorDOM() {
+		if (avatarEditorOverlay) return;
+
+		const overlay = document.createElement('div');
+		overlay.className = 'avatar-editor-overlay';
+
+		const panel = document.createElement('div');
+		panel.className = 'avatar-editor-panel';
+
+		const title = document.createElement('div');
+		title.className = 'avatar-editor-title';
+		title.textContent = 'Draw your avatar';
+		panel.appendChild(title);
+
+		const grid = document.createElement('div');
+		grid.className = 'avatar-editor-grid';
+
+		for (let r = 0; r < 8; r++) {
+			for (let c = 0; c < 8; c++) {
+				const cell = document.createElement('div');
+				cell.className = 'avatar-editor-cell';
+				cell.dataset.r = r;
+				cell.dataset.c = c;
+				paintEditorCell(cell, avatarEditorState[r][c]);
+
+				cell.addEventListener('click', () => {
+					avatarEditorState[r][c] = avatarEditorCurrentColor;
+					paintEditorCell(cell, avatarEditorCurrentColor);
+				});
+				cell.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					avatarEditorState[r][c] = avatarEditorCurrentColor;
+					paintEditorCell(cell, avatarEditorCurrentColor);
+				}, {
+					passive: false
+				});
+
+				grid.appendChild(cell);
+			}
+		}
+		panel.appendChild(grid);
+
+		const palette = document.createElement('div');
+		palette.className = 'avatar-editor-palette';
+		AVATAR_COLORS.forEach((rgb, i) => {
+			const sw = document.createElement('div');
+			sw.className = 'avatar-editor-sw' + (i === avatarEditorCurrentColor ? ' active' : '');
+			if (i === 0) {
+				sw.style.background =
+					'repeating-conic-gradient(#222 0% 25%, #333 0% 50%) 0 0 / 10px 10px';
+			} else {
+				sw.style.background = `rgb(${rgb.join(',')})`;
+			}
+			sw.addEventListener('click', () => {
+				avatarEditorCurrentColor = i;
+				[...palette.children].forEach((x, j) =>
+					x.classList.toggle('active', j === i));
+			});
+			palette.appendChild(sw);
+		});
+		panel.appendChild(palette);
+
+		const actions = document.createElement('div');
+		actions.className = 'avatar-editor-actions';
+
+		const btnCancel = document.createElement('button');
+		btnCancel.className = 'avatar-editor-btn ghost';
+		btnCancel.textContent = 'Cancel';
+		btnCancel.onclick = closeAvatarEditor;
+
+		const btnClear = document.createElement('button');
+		btnClear.className = 'avatar-editor-btn ghost';
+		btnClear.textContent = 'Clear';
+		btnClear.onclick = () => {
+			avatarEditorState = Array.from({
+				length: 8
+			}, () => Array(8).fill(0));
+			[...grid.children].forEach((cell) => paintEditorCell(cell, 0));
+		};
+
+		const btnSave = document.createElement('button');
+		btnSave.className = 'avatar-editor-btn primary';
+		btnSave.textContent = 'Save';
+		btnSave.onclick = saveAvatarEditor;
+
+		actions.appendChild(btnCancel);
+		actions.appendChild(btnClear);
+		actions.appendChild(btnSave);
+		panel.appendChild(actions);
+
+		overlay.appendChild(panel);
+		document.body.appendChild(overlay);
+		avatarEditorOverlay = overlay;
+
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) closeAvatarEditor();
+		});
+	}
+
+	function paintEditorCell(cellEl, colorIdx) {
+		const rgb = AVATAR_COLORS[colorIdx];
+		if (colorIdx === 0) {
+			cellEl.style.background =
+				'repeating-conic-gradient(#222 0% 25%, #333 0% 50%) 0 0 / 8px 8px';
+		} else {
+			cellEl.style.background = `rgb(${rgb.join(',')})`;
+		}
+	}
+
+	function closeAvatarEditor() {
+		if (!avatarEditorOverlay) return;
+		avatarEditorOverlay.remove();
+		avatarEditorOverlay = null;
+	}
+
+	async function saveAvatarEditor() {
+		const user = getStoredUser();
+		const token = getStoredToken();
+		if (!user || !token) return;
+
+		const pixels = new Array(192).fill(0);
+		for (let r = 0; r < 8; r++) {
+			for (let c = 0; c < 8; c++) {
+				const rgb = AVATAR_COLORS[avatarEditorState[r][c]];
+				const base = (r * 8 + c) * 3;
+				pixels[base] = rgb[0];
+				pixels[base + 1] = rgb[1];
+				pixels[base + 2] = rgb[2];
+			}
+		}
+
+		plus.nativeUI.showWaiting('Saving...');
+		try {
+			const res = await fetch(`${AUTH_API_BASE}/api/account/avatar`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': 'Bearer ' + token,
+				},
+				body: JSON.stringify({
+					avatar: pixels
+				}),
+			});
+			const data = await res.json();
+			plus.nativeUI.closeWaiting();
+
+			if (data.success) {
+				closeAvatarEditor();
+				renderProfileAvatar(user);
+				plus.nativeUI.toast('Avatar saved');
+			} else {
+				plus.nativeUI.toast(data.error || 'Save failed');
+			}
+		} catch (err) {
+			plus.nativeUI.closeWaiting();
+			plus.nativeUI.toast('Network error');
+		}
+	}
+
+	// ---------- 12. 事件绑定 ----------
+	bindAuthEye(loginEye, loginPassword);
+	bindAuthEye(signupEye1, signupPassword);
+	bindAuthEye(signupEye2, signupConfirm);
+
+	signupPassword.addEventListener('input', (e) => {
+		checkPasswordRules(e.target.value);
+	});
+
+	tabPassword.addEventListener('click', () => switchLoginMode('password'));
+	tabCode.addEventListener('click', () => switchLoginMode('code'));
+
+	loginPasswordBtn.addEventListener('click', doLoginPassword);
+	loginCodeBtn.addEventListener('click', doLoginCode);
+
+	sendCodeBtn.addEventListener('click', sendSignupCode);
+	loginSendBtn.addEventListener('click', sendLoginCode);
+
+	signupBtn.addEventListener('click', doSignup);
+
+	goSignupLink.addEventListener('click', showSignupForm);
+	goLoginLink.addEventListener('click', showLoginForm);
+
+	userBtn.addEventListener('click', () => {
+		if (getStoredUser()) {
+			openProfileView();
+		} else {
+			openAuthView();
+		}
+	});
+
+	logoutBtn.addEventListener('click', doLogout);
+	deleteAccountBtn.addEventListener('click', doDeleteAccount);
+	profileAvatar.addEventListener('click', changeAvatarMenu);
+
+	loginAccount.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') loginPassword.focus();
+	});
+	loginPassword.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') doLoginPassword();
+	});
+	loginCode.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') doLoginCode();
+	});
+	signupConfirm.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') doSignup();
+	});
+
 	// ----- 项目系统状态 -----
 	let currentProject = null;
 	let currentFileName = null;
 
 	// AI 状态
 	let isAiSidebarOpen = false;
-	let aiCredits = 0;
-	let conversationHistory = [];
-	const MAX_HISTORY_ROUNDS = 10;
 
 	let aiClient = null;
 
-	(async () => {
+	(function initAiClient() {
 		function getAndroidId() {
 			if (plus.os.name.toLowerCase() !== 'android') return '';
 			try {
-				// 关键：用 invoke 直接调用 Settings$Secure 的 getString 方法
 				var main = plus.android.runtimeMainActivity();
 				var resolver = main.getContentResolver();
 
@@ -415,7 +1288,6 @@ const initApp = (async function() {
 					'android_id'
 				);
 
-				// 过滤已知的无效值
 				if (!androidId || androidId === '9774d56d682e549c') return '';
 				return androidId;
 			} catch (e) {
@@ -425,13 +1297,56 @@ const initApp = (async function() {
 		}
 
 		aiClient = new AIClient({
-			token: '57b43a1858f7b562f103599872a432ce57afd5fa6180d20cd66084712aadd2fc',
+			token: '', // 每次 send 时刷新
 			userId: getAndroidId()
 		});
 	})();
 
 	// ============================================================
-	// 多选项卡管理 (移入 initApp 内部)
+	// 余额
+	// ============================================================
+
+	function getCurrentUser() {
+		try {
+			const raw = plus.storage.getItem('pylind-user');
+			if (!raw) return null;
+			return JSON.parse(raw);
+		} catch {
+			return null;
+		}
+	}
+
+	function setBalanceDisplay(value) {
+		const v = Number(value) || 0;
+		profileBalanceNum.textContent = v.toLocaleString();
+	}
+
+	async function loadBalance() {
+		const user = getCurrentUser();
+		if (!user) {
+			setBalanceDisplay(0);
+			return;
+		}
+
+		try {
+			const res = await fetch(`${CREDIT_API}?email=${encodeURIComponent(user.email)}`, {
+				headers: {
+					'Authorization': 'Bearer ' + AUTH_API_TOKEN
+				}
+			});
+			const data = await res.json();
+			if (data.success) {
+				setBalanceDisplay(data.credit);
+			} else {
+				setBalanceDisplay(0);
+			}
+		} catch (e) {
+			console.warn('[Balance] load failed:', e);
+		}
+	}
+
+	// ============================================================
+	// 多选项卡管理
 	// ============================================================
 	let openTabs = [];
 	let activeTabId = null;
@@ -452,18 +1367,12 @@ const initApp = (async function() {
 		return openTabs.find(t => t.id === activeTabId);
 	}
 
-	function getActiveTabModel() {
-		if (!activeTabId) return null;
-		return tabModels.get(activeTabId) || null;
-	}
-
 	function getMonacoLanguage(fileName) {
 		if (!fileName) return 'plaintext';
 
 		const ext = fileName.split('.').pop().toLowerCase();
 
 		const map = {
-			// Web 前端
 			'html': 'html',
 			'htm': 'html',
 			'css': 'css',
@@ -476,12 +1385,10 @@ const initApp = (async function() {
 			'ts': 'typescript',
 			'tsx': 'typescript',
 
-			// JSON / 配置
 			'json': 'json',
 			'jsonc': 'jsonc',
 			'json5': 'json',
 
-			// 后端语言
 			'py': 'python',
 			'pyw': 'python',
 			'java': 'java',
@@ -499,16 +1406,13 @@ const initApp = (async function() {
 			'swift': 'swift',
 			'kt': 'kotlin',
 
-			// 脚本 & Shell
 			'sh': 'shell',
 			'bash': 'shell',
 			'zsh': 'shell',
 			'ps1': 'powershell',
 
-			// SQL
 			'sql': 'sql',
 
-			// 标记语言
 			'md': 'markdown',
 			'xml': 'xml',
 			'svg': 'xml',
@@ -516,7 +1420,6 @@ const initApp = (async function() {
 			'yml': 'yaml',
 			'toml': 'toml',
 
-			// 其他
 			'r': 'r',
 			'scala': 'scala',
 			'lua': 'lua',
@@ -851,60 +1754,22 @@ const initApp = (async function() {
 		saveAdState();
 	}
 
-	function loadAiCredits() {
-		const today = new Date().toDateString();
-		const freeKey = 'free-credits-date';
-		const savedDate = plus.storage.getItem(freeKey);
-
-		const saved = plus.storage.getItem('ai-credits');
-		aiCredits = saved ? parseInt(saved, 10) : 0;
-
-		if (savedDate !== today) {
-			aiCredits += 10;
-			plus.storage.setItem(freeKey, today);
-			saveAiCredits();
-		}
-
-		updateCreditDisplay();
-	}
-
-	function updateCreditDisplay() {
-		const creditDisplay = document.getElementById('credit-count');
-		if (creditDisplay) {
-			creditDisplay.textContent = aiCredits;
-		}
-	}
-
-	function saveAiCredits() {
-		plus.storage.setItem('ai-credits', String(aiCredits));
-		updateCreditDisplay();
-	}
-
-	function watchAdForCredits() {
-		if (!canPlayVideoAd()) {
-			return;
-		}
-		showVideoAdvert(() => {
-			recordAdPlaySuccess();
-			aiCredits += 10;
-			saveAiCredits();
-		}, null);
-	}
-
 	// ============================================================
 	// 页面切换管理
 	// ============================================================
 
 	const PAGE_VIEWS = {
-		files: 'file-list-view',
+		projects: 'project-list-view',
 		edit: 'edit-view',
 		pypi: 'pypi-view',
-		about: 'about-view'
+		settings: 'settings-view',
+		auth: 'auth-view',
+		profile: 'profile-view'
 	};
 
 	const views = Object.values(PAGE_VIEWS).map(key => document.getElementById(key));
 
-	let currentView = 'files';
+	let currentView = 'projects';
 
 	function togglePage(pageId) {
 		currentView = pageId;
@@ -949,17 +1814,123 @@ const initApp = (async function() {
 		return marked.parse(md.trim()).slice(0, -1);
 	}
 
+	let historyLoadedForToken = '';
+
+	async function loadAndRenderHistory(opts = {}) {
+		const {
+			token = getStoredToken(),
+				silent = false,
+				scroll = true,
+		} = opts;
+
+		if (!token) {
+			if (!silent) console.log('[AI History] no token, skip');
+			return false;
+		}
+
+		try {
+			aiClient.token = token;
+			const list = await aiClient.loadHistory(token);
+
+			if (!silent) {
+				console.log(`[AI History] loaded ${list.length} messages`);
+			}
+
+			aiMessages.innerHTML = '';
+
+			for (const msg of list) {
+				if (msg.role === 'user') {
+					addAiMessage(msg.content || '', null, 'user');
+				} else if (msg.role === 'assistant') {
+					// ★ 有 reasoning 就用富渲染，否则走原逻辑
+					if (msg.reasoning) {
+						renderAssistantMessage(msg.content || '', msg.reasoning);
+					} else {
+						addAiMessage(msg.content || '', null, 'assistant');
+					}
+				}
+			}
+
+			if (scroll && list.length > 0) {
+				requestAnimationFrame(() => {
+					aiMessages.scrollTop = aiMessages.scrollHeight;
+				});
+			}
+
+			return true;
+		} catch (e) {
+			if (!silent) console.warn('[AI History] load failed:', e);
+			return false;
+		}
+	}
+	/**
+	 * 渲染一条带思考区的 assistant 消息（用于历史回显）
+	 * @param {string} content    正文
+	 * @param {string} reasoning  思考内容
+	 */
+	function renderAssistantMessage(content, reasoning) {
+		const msgDiv = document.createElement('div');
+		msgDiv.className = 'ai-message assistant';
+
+		// 思考区（可折叠，默认折叠）
+		if (reasoning) {
+			const rDiv = document.createElement('div');
+			rDiv.className = 'ai-reasoning';
+
+			const rHeader = document.createElement('div');
+			rHeader.className = 'ai-reasoning-header'; // 不加 expanded，默认折叠
+			rHeader.innerHTML = `
+			<svg class="ai-reasoning-arrow" viewBox="0 0 24 24" fill="none"
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M9 6l6 6-6 6"/>
+			</svg>
+			<span>Thought for a moment</span>
+		`;
+
+			const rBody = document.createElement('div');
+			rBody.className = 'ai-reasoning-body collapsed';
+			rBody.textContent = reasoning;
+
+			rHeader.onclick = () => {
+				const hidden = rBody.classList.contains('collapsed');
+				rBody.classList.toggle('collapsed', !hidden);
+				rHeader.classList.toggle('expanded', hidden);
+			};
+
+			rDiv.appendChild(rHeader);
+			rDiv.appendChild(rBody);
+			msgDiv.appendChild(rDiv);
+		}
+
+		// 正文
+		if (content) {
+			const contentDiv = document.createElement('div');
+			contentDiv.innerHTML = renderMarkdown(content);
+			msgDiv.appendChild(contentDiv);
+		}
+
+		aiMessages.appendChild(msgDiv);
+		aiMessages.scrollTop = aiMessages.scrollHeight;
+	}
+
 	async function sendAiMessage(userInput) {
 		if (!userInput.trim()) return;
 
-		if (aiCredits <= 0) {
-			addAiMessage('Not Enough Coins', null, 'system');
+		const user = getCurrentUser();
+		if (!user) {
+			addAiMessage('Please sign in first', null, 'system');
+			openAuthView();
 			return;
 		}
 
-		aiCredits -= 1;
-		saveAiCredits();
+		const token = getStoredToken();
+		if (!token) {
+			addAiMessage('Please sign in again', null, 'system');
+			openAuthView();
+			return;
+		}
 
+		// 用户消息上屏
 		addAiMessage(userInput, null, 'user');
 		aiInput.value = '';
 
@@ -967,7 +1938,7 @@ const initApp = (async function() {
 		const streamDiv = document.createElement('div');
 		streamDiv.className = 'ai-message assistant';
 
-		// ---------- 工具调用区（固定在气泡最上面，覆盖式） ----------
+		// 工具调用区
 		const toolCallDiv = document.createElement('div');
 		toolCallDiv.className = 'ai-toolcall';
 		toolCallDiv.innerHTML = `
@@ -985,13 +1956,13 @@ const initApp = (async function() {
 			toolCallDiv.classList.toggle('done', done);
 		};
 
-		// ---------- 思考区（默认展开） ----------
+		// 思考区
 		const streamReasoningDiv = document.createElement('div');
 		streamReasoningDiv.className = 'ai-reasoning';
-		streamReasoningDiv.style.display = 'none'; // 没思考就不显示
+		streamReasoningDiv.style.display = 'none';
 
 		const reasoningHeader = document.createElement('div');
-		reasoningHeader.className = 'ai-reasoning-header expanded'; // 默认展开
+		reasoningHeader.className = 'ai-reasoning-header expanded';
 		reasoningHeader.innerHTML = `
 	<svg class="ai-reasoning-arrow" viewBox="0 0 24 24" fill="none"
 		stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1000,33 +1971,31 @@ const initApp = (async function() {
 	<span>Thinking...</span>
 `;
 
-		// 默认不折叠
 		const reasoningBody = document.createElement('div');
 		reasoningBody.className = 'ai-reasoning-body';
 
 		streamReasoningDiv.appendChild(reasoningHeader);
 		streamReasoningDiv.appendChild(reasoningBody);
 
-		// ---------- 正文区 ----------
+		// 正文区
 		const streamContentDiv = document.createElement('div');
 		streamContentDiv.textContent = 'Thinking...';
 
-		// 顺序：工具区 → 思考区 → 正文
 		streamDiv.appendChild(toolCallDiv);
 		streamDiv.appendChild(streamReasoningDiv);
 		streamDiv.appendChild(streamContentDiv);
 		aiMessages.appendChild(streamDiv);
 		aiMessages.scrollTop = aiMessages.scrollHeight;
 
+		// 状态
 		let rawBuffer = '';
 		let reasoningBuffer = '';
 		let firstChunk = true;
 		let renderScheduled = false;
 		let reasoningScheduled = false;
 		let reasoningDone = false;
-		let userToggledReasoning = false; // 用户是否手动干预过
+		let userToggledReasoning = false;
 
-		// 点击标题展开/收起
 		reasoningHeader.onclick = () => {
 			userToggledReasoning = true;
 			const hidden = reasoningBody.classList.contains('collapsed');
@@ -1062,7 +2031,6 @@ const initApp = (async function() {
 			const label = reasoningHeader.querySelector('span');
 			if (label) label.textContent = 'Thought for a moment';
 
-			// 思考完成后自动折叠（用户没手动干预过才折叠）
 			if (!userToggledReasoning) {
 				reasoningBody.classList.add('collapsed');
 				reasoningHeader.classList.remove('expanded');
@@ -1074,47 +2042,32 @@ const initApp = (async function() {
 				firstChunk = false;
 				streamContentDiv.textContent = '';
 			}
-			// 正文一到，标记思考完成（保持折叠）
 			if (reasoningBuffer) markReasoningDone();
 			rawBuffer += chunk;
 			scheduleRender();
 		};
 
+		// ★ 取当前编辑器上下文
+		const activeTab = getActiveTab();
+		let context = null;
+
+		if (activeTab) {
+			const model = tabModels.get(activeTab.id);
+			context = {
+				fileName: activeTab.fileName || '',
+				filePath: activeTab.filePath || '',
+				projectName: activeTab.projectName || '',
+				code: model ? model.getValue() : '',
+			};
+		}
+
 		try {
-			const activeTab = getActiveTab();
-			let currentCode = '';
-			let projectName = null;
+			// 每次发送前刷新 client token
+			aiClient.token = token;
 
-			if (activeTab) {
-				projectName = activeTab.projectName;
-				const model = tabModels.get(activeTab.id);
-				if (model) {
-					currentCode = model.getValue();
-				}
-			}
-
-			conversationHistory.push({
-				role: 'user',
-				content: userInput
-			});
-
-			if (conversationHistory.length > MAX_HISTORY_ROUNDS * 2) {
-				conversationHistory = conversationHistory.slice(-MAX_HISTORY_ROUNDS * 2);
-			}
-
-			const prompt = `You are a senior code debugging expert. The current file content is:
-\`\`\`${activeTab ? activeTab.fileName.split('.').pop() : 'text'}
-${currentCode}
-\`\`\`
-
-Current project: ${projectName || '(no project opened)'}
-Current file: ${activeTab ? activeTab.fileName : '(none)'}
-
-Answer directly in natural language (Markdown format). When code is needed, wrap it in a \`\`\`language code block.
-
-User: ${userInput}`;
-
-			await aiClient.send(prompt, {
+			await aiClient.send(userInput, {
+				token,
+				context, // ★ 传上下文
 				onReasoning: (chunk) => {
 					reasoningBuffer += chunk;
 					scheduleReasoningRender();
@@ -1130,7 +2083,13 @@ User: ${userInput}`;
 					console.log(`✅ ${name}`);
 					showToolCall('', true);
 				},
-				onDone: () => {},
+				onCredit: (delta, credit) => {
+					setBalanceDisplay(credit);
+					console.log(`[Balance] ${delta > 0 ? '+' : ''}${delta} => ${credit}`);
+				},
+				onDone: (totalCost) => {
+					console.log(`[AI] 本次共消耗 ${totalCost} 分`);
+				},
 				onError: (e) => {
 					throw e;
 				}
@@ -1143,28 +2102,16 @@ User: ${userInput}`;
 				streamContentDiv.innerHTML = renderMarkdown(rawBuffer);
 			}
 
-			// 只有思考、没有正文的情况
 			if (reasoningBuffer) markReasoningDone();
-
-			conversationHistory.push({
-				role: 'assistant',
-				content: rawBuffer
-			});
-
 		} catch (error) {
 			streamDiv.remove();
 			addAiMessage(`Error：${error.message}`, null, 'system');
-			aiCredits += 1;
-			saveAiCredits();
 		}
 	}
 
 	function showFileListView() {
-		togglePage('files');
+		togglePage('projects');
 		renderProjectList();
-		if (isAiSidebarOpen) {
-			toggleAiSidebar();
-		}
 	}
 
 	function showEditView() {
@@ -1217,7 +2164,7 @@ User: ${userInput}`;
 	let autoSaveTimer = null;
 	let pendingCharCount = 0;
 	const AUTO_SAVE_CHAR_THRESHOLD = 5;
-	const AUTO_SAVE_INTERVAL = 10000; // 10 秒
+	const AUTO_SAVE_INTERVAL = 10000;
 
 	async function autoSaveActiveTab(reason = '') {
 		const activeTab = getActiveTab();
@@ -1227,7 +2174,6 @@ User: ${userInput}`;
 		try {
 			await saveTabContent(activeTab.id);
 
-			// 保存后刷新一下标题，去掉 *
 			if (activeTabId === activeTab.id) {
 				editorTitle.textContent = `${activeTab.filePath.split('/').slice(1).join('/')}`;
 			}
@@ -1251,15 +2197,12 @@ User: ${userInput}`;
 		pendingCharCount = 0;
 	}
 
-	// 启动定时器
 	resetAutoSaveTimer();
 
-	// 监听内容变化
 	editor.onDidChangeModelContent((e) => {
 		const model = editor.getModel();
 		if (!model) return;
 
-		// ---------- 1. 原有 dirty 标记逻辑 ----------
 		for (const [tabId, tabModel] of tabModels) {
 			if (tabModel === model) {
 				const tab = openTabs.find(t => t.id === tabId);
@@ -1276,7 +2219,6 @@ User: ${userInput}`;
 						}
 					}
 
-					// ---------- 2. 累计修改字符数 ----------
 					const changes = e.changes || [];
 					let delta = 0;
 					for (const ch of changes) {
@@ -1285,7 +2227,6 @@ User: ${userInput}`;
 					}
 					pendingCharCount += delta;
 
-					// 达到阈值就保存
 					if (pendingCharCount >= AUTO_SAVE_CHAR_THRESHOLD) {
 						resetCharCounter();
 						autoSaveActiveTab('累计修改 10 字符');
@@ -1393,7 +2334,7 @@ User: ${userInput}`;
 			adVidioReward.destroy();
 			adVidioReward = null;
 		});
-		adVidioReward.onClose(function(e) {
+		adVidioReward.onClose(function() {
 			if (callback && typeof callback === 'function') {
 				callback(args);
 			}
@@ -1496,12 +2437,12 @@ User: ${userInput}`;
 	}
 
 	// ============================================================
-	// 文件操作 (使用 /storage/emulated/0/Pylind 目录，支持项目子目录)
+	// 文件操作
 	// ============================================================
 	const FILE_DIR = '/storage/emulated/0/Pylind/';
 
 	// ============================================================
-	// 自定义长按菜单（锚点定位，替代 plus.nativeUI.actionSheet）
+	// 自定义长按菜单
 	// ============================================================
 	let activeActionSheet = null;
 
@@ -1724,7 +2665,6 @@ User: ${userInput}`;
 		});
 	}
 
-	// ============ 自动创建目录（最简版） ============
 	async function ensureDirectory(subPath) {
 		return new Promise((resolve, reject) => {
 			const fullPath = FILE_DIR + subPath;
@@ -1874,9 +2814,9 @@ User: ${userInput}`;
 	async function renderProjectList() {
 		try {
 			const projects = await listProjects();
-			fileGrid.innerHTML = '';
+			projectGrid.innerHTML = '';
 			if (projects.length === 0) {
-				fileGrid.innerHTML = '<div class="empty-msg">No projects</div>';
+				projectGrid.innerHTML = '<div class="empty-msg">No projects</div>';
 				return;
 			}
 			projects.sort((a, b) => a.name.localeCompare(b.name));
@@ -1943,7 +2883,7 @@ User: ${userInput}`;
 					clearTimeout(longPressTimer);
 				});
 
-				fileGrid.appendChild(div);
+				projectGrid.appendChild(div);
 			}
 		} catch (e) {
 			console.warn('renderProjectList error', e);
@@ -2039,7 +2979,6 @@ User: ${userInput}`;
 	async function openProject(projectName) {
 		currentProject = projectName;
 
-		const oldTabs = openTabs.filter(t => t.projectName !== projectName);
 		for (const tab of openTabs) {
 			if (tab.projectName !== projectName) {
 				const model = tabModels.get(tab.id);
@@ -2063,13 +3002,25 @@ User: ${userInput}`;
 		}
 	}
 
+	function isImageFile(filename) {
+		const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif',
+			'avif'
+		];
+		const ext = filename.split('.').pop().toLowerCase();
+		return imageExtensions.includes(ext);
+	}
+
 	async function openFileInProject(projectName, fileName) {
 		const filePath = projectName + '/' + fileName;
 
 		try {
-			console.log(filePath)
 			const entry = await getFile(filePath);
 			const content = entry ? entry.content : '';
+
+			if (isImageFile(filePath)) {
+				plus.nativeUI.previewImage([FILE_DIR + filePath]);
+				return;
+			}
 
 			const existingTab = findTabByPath(filePath, projectName);
 			if (existingTab) {
@@ -2085,7 +3036,7 @@ User: ${userInput}`;
 				return;
 			}
 
-			const tabId = await createTab(filePath, projectName, content);
+			await createTab(filePath, projectName, content)
 
 			currentProject = projectName;
 			currentFileName = filePath;
@@ -2097,7 +3048,7 @@ User: ${userInput}`;
 	}
 
 	// ============================================================
-	// 文件列表抽屉（弹出式覆盖层，类似 AI 侧边栏）- 支持文件夹展开
+	// 文件列表抽屉
 	// ============================================================
 	let fileDrawerOpen = false;
 	let drawerOverlay = null;
@@ -2147,12 +3098,10 @@ User: ${userInput}`;
 		drawerOverlay.classList.remove('visible');
 	}
 
-	// 文件夹展开状态存储
 	if (!window._folderExpanded) {
 		window._folderExpanded = {};
 	}
 
-	// 创建文件项
 	function createDrawerFileItem(fileName, isInFolder = false, folderName = '') {
 		const item = document.createElement('div');
 		item.className = 'drawer-file-item';
@@ -2237,7 +3186,6 @@ User: ${userInput}`;
 		return item;
 	}
 
-	// 文件上下文菜单
 	function showFileContextMenu(fileName, folderPath = '', anchor = null) {
 		const filePath = folderPath ?
 			currentProject + '/' + folderPath + '/' + fileName :
@@ -2317,7 +3265,6 @@ User: ${userInput}`;
 		});
 	}
 
-	// 文件夹上下文菜单
 	function showFolderContextMenu(folderName, parentPath = '', anchor = null) {
 		const folderFullPath = parentPath ?
 			currentProject + '/' + parentPath + '/' + folderName :
@@ -2398,9 +3345,6 @@ User: ${userInput}`;
 		});
 	}
 
-
-
-	// 递归渲染文件夹内容
 	async function renderFolderContents(folderPath, container, depth = 0) {
 		try {
 			const entries = await listDirectory(currentProject + '/' + folderPath);
@@ -2511,7 +3455,6 @@ User: ${userInput}`;
 		}
 	}
 
-	// 递归删除文件夹
 	async function deleteFolderRecursive(folderPath) {
 		try {
 			const entries = await listDirectory(folderPath.replace(FILE_DIR, ''));
@@ -2639,8 +3582,6 @@ User: ${userInput}`;
 		}
 	}
 
-
-	// 抽屉新建文件
 	document.getElementById('drawer-new-file-btn').addEventListener('click', async function() {
 		if (!currentProject) {
 			plus.nativeUI.toast('No project opened');
@@ -2654,7 +3595,6 @@ User: ${userInput}`;
 		}, 'New File', 'main.py', ['Ok', 'Cancel']);
 	});
 
-	// 抽屉导入文件
 	document.getElementById('drawer-import-file-btn').addEventListener('click', function() {
 		if (!currentProject) {
 			plus.nativeUI.toast('No project opened');
@@ -2663,11 +3603,8 @@ User: ${userInput}`;
 
 		plus.io.chooseFile({
 			title: 'Choose files to import',
-			filter: {
-				// 不限制任何文件类型，接受所有文件
-				// 移除 suffix 限制即可接受任何文件
-			},
-			multiple: true // 允许选择多个文件
+			filter: {},
+			multiple: true
 		}, async (event) => {
 			const files = event.files;
 			if (!files || files.length === 0) return;
@@ -2676,8 +3613,8 @@ User: ${userInput}`;
 
 			try {
 				for (let i = 0; i < files.length; i++) {
-					const filePath = files[i]; // 系统绝对路径
-					const fileName = filePath.split('/').pop(); // 提取文件名
+					const filePath = files[i];
+					const fileName = filePath.split('/').pop();
 					const targetPath = currentProject + '/' + fileName;
 
 					const content = await readFileContent(filePath);
@@ -2706,7 +3643,6 @@ User: ${userInput}`;
 		});
 	});
 
-	// 新建文件夹按钮
 	document.getElementById('drawer-new-folder-btn').addEventListener('click', function() {
 		if (!currentProject) {
 			plus.nativeUI.toast('No project opened');
@@ -2736,9 +3672,6 @@ User: ${userInput}`;
 		openFileInProject(projectName, fileName);
 	}
 
-	// ============================================================
-	// 保存文件
-	// ============================================================
 	async function saveCurrentFile() {
 		const activeTab = getActiveTab();
 		if (!activeTab) {
@@ -2756,9 +3689,6 @@ User: ${userInput}`;
 		}, 600);
 	}
 
-	// ============================================================
-	// 新建项目
-	// ============================================================
 	function newProjectHandler() {
 		plus.nativeUI.prompt('Enter project name:', function(e) {
 			if (e.index === 0 && e.value) {
@@ -2781,9 +3711,6 @@ User: ${userInput}`;
 		openProject(projectName);
 	}
 
-	// ============================================================
-	// 导入项目
-	// ============================================================
 	function importProjectHandler() {
 		plus.io.chooseFile({
 			title: 'Choose the project zip file',
@@ -2828,7 +3755,6 @@ User: ${userInput}`;
 		});
 	}
 
-	// 解压 ZIP 文件
 	function extractZip(filePath, targetPath, projectName) {
 		plus.zip.decompress(
 			filePath,
@@ -2843,7 +3769,6 @@ User: ${userInput}`;
 		);
 	}
 
-	// 检查目录是否存在
 	function checkFileExists(path) {
 		return new Promise((resolve) => {
 			plus.io.resolveLocalFileSystemURL(
@@ -2858,7 +3783,6 @@ User: ${userInput}`;
 		});
 	}
 
-
 	async function importFilesToProject(projectName, fileMap) {
 		for (const [path, content] of Object.entries(fileMap)) {
 			await putFile(path, content);
@@ -2868,20 +3792,7 @@ User: ${userInput}`;
 		openProject(projectName);
 	}
 
-	// ============================================================
-	// 返回项目列表 - 优化：优先关闭抽屉和控制台
-	// ============================================================
 	function goBack() {
-		if (fileDrawerOpen) {
-			closeFileDrawer();
-			return;
-		}
-
-		if (consoleOverlay.classList.contains('visible')) {
-			closeConsole();
-			return;
-		}
-
 		const dirtyTabs = openTabs.filter(t => t.isDirty);
 		if (dirtyTabs.length > 0) {
 			const fileNames = dirtyTabs.map(t => t.fileName).join(', ');
@@ -2905,36 +3816,78 @@ User: ${userInput}`;
 	}
 
 	function doGoBack() {
-		for (const tab of openTabs) {
-			const model = tabModels.get(tab.id);
-			if (model) {
-				model.dispose();
-				tabModels.delete(tab.id);
-			}
+		if (activeActionSheet) {
+			closeCustomActionSheet();
+			return false;
 		}
-		openTabs = [];
-		activeTabId = null;
-		tabIdCounter = 0;
 
-		currentProject = null;
-		currentFileName = null;
-
-		editor.setModel(null);
-		editorTitle.textContent = 'No file opened';
-		showFileListView();
-		consoleOverlay.classList.remove('visible');
-		if (adView) {
-			adView.close();
-			adView = null;
-		}
-		if (isAiSidebarOpen) {
-			toggleAiSidebar();
-		}
 		if (fileDrawerOpen) {
 			closeFileDrawer();
+			return false;
 		}
-		window._folderExpanded = {};
-		tabsScroll.innerHTML = '';
+
+		if (consoleOverlay.classList.contains('visible')) {
+			closeConsole();
+			return false;
+		}
+
+		if (avatarEditorOverlay) {
+			closeAvatarEditor();
+			return false;
+		}
+
+		function isWebviewVisible(wv) {
+			if (!wv) return false;
+			try {
+				const style = wv.isVisible();
+				return style;
+			} catch {
+				return false;
+			}
+		}
+
+		function findLastVisibleNonFirst() {
+			const all = plus.webview.all();
+			for (let i = all.length - 1; i >= 1; i--) {
+				const wv = all[i];
+				if (isWebviewVisible(wv)) {
+					return wv;
+				}
+			}
+			return null;
+		}
+
+		const wv = findLastVisibleNonFirst();
+		if (wv) {
+			wv.hide();
+			return false;
+		}
+
+		if (currentView !== 'projects') {
+			for (const tab of openTabs) {
+				const model = tabModels.get(tab.id);
+				if (model) {
+					model.dispose();
+					tabModels.delete(tab.id);
+				}
+			}
+			openTabs = [];
+			activeTabId = null;
+			tabIdCounter = 0;
+
+			currentProject = null;
+			currentFileName = null;
+
+			editor.setModel(null);
+			editorTitle.textContent = 'No file opened';
+			showFileListView();
+			consoleOverlay.classList.remove('visible');
+			window._folderExpanded = {};
+			tabsScroll.innerHTML = '';
+			return false;
+		}
+
+		return true;
 	}
 
 	function sendPush(title, subtitle, content, cover = false) {
@@ -3060,10 +4013,9 @@ User: ${userInput}`;
 	};
 
 	// ============================================================
-	// Pyodide 初始化 (懒加载)
+	// Pyodide
 	// ============================================================
 
-	// ============ 读取目录（官方标准用法） ============
 	function readDirAll(entry) {
 		return new Promise((resolve, reject) => {
 			var reader = entry.createReader();
@@ -3079,7 +4031,6 @@ User: ${userInput}`;
 		});
 	}
 
-	// ============ 读取文件内容 ============
 	function readFileContent(file) {
 		return new Promise((resolve, reject) => {
 			var fileReader = new plus.io.FileReader();
@@ -3093,7 +4044,6 @@ User: ${userInput}`;
 		});
 	}
 
-	// ============ 加载目录到 Pyodide ============
 	async function loadPylindToPyodide(projectName = '') {
 		try {
 			pyodide.runPython(`
@@ -3145,7 +4095,6 @@ for item in os.listdir('/home/pylind'):
 		}
 	}
 
-	// ============ 递归加载子目录 ============
 	async function loadDirectoryRecursive(dirEntry, currentPath) {
 		try {
 			var entries = await readDirAll(dirEntry);
@@ -3215,7 +4164,6 @@ for item in os.listdir('/home/pylind'):
 		}
 	}
 
-	// ============ 递归保存子目录 ============
 	async function saveDirectoryRecursive(pyPath, parentDir, dirName) {
 		try {
 			var localDir = await createLocalDirectory(parentDir, dirName);
@@ -3245,7 +4193,6 @@ for item in os.listdir('/home/pylind'):
 		}
 	}
 
-	// ============ 在本地创建目录 ============
 	function createLocalDirectory(parentDir, dirName) {
 		return new Promise((resolve, reject) => {
 			parentDir.getDirectory(
@@ -3310,13 +4257,12 @@ for item in os.listdir('/home/pylind'):
 		});
 	}
 
-	// 辅助函数：递归创建目录
 	async function ensureDirectoryExists(dirPath) {
 		return new Promise((resolve, reject) => {
 			plus.io.resolveLocalFileSystemURL(
 				dirPath,
 				function() {
-					resolve(); // 目录已存在
+					resolve();
 				},
 				function() {
 					const parentPath = dirPath.substring(0, dirPath.lastIndexOf('/'));
@@ -3369,7 +4315,7 @@ for item in os.listdir('/home/pylind'):
 
 			pyodideEmptyState = pyodide.pyodide_py._state.save_state();
 			pyodide.globals.set('js_input', (prompt) => {
-				const val = window.prompt(prompt);
+				const val = plus.nativeUI.prompt(prompt);
 				term.writeln(prompt + val);
 				return val;
 			});
@@ -3392,9 +4338,6 @@ for item in os.listdir('/home/pylind'):
 		return pyodide;
 	}
 
-	// ============================================================
-	// 运行代码
-	// ============================================================
 	async function runCode() {
 		const activeTab = getActiveTab();
 		if (!activeTab) {
@@ -3484,7 +4427,7 @@ for item in os.listdir('/home/pylind'):
 	}
 
 	// ============================================================
-	// PyPI 包管理 (使用 plus.storage)
+	// PyPI
 	// ============================================================
 
 	const INSTALLED_PACKAGES_KEY = 'pyodide-packages-storage';
@@ -3549,7 +4492,6 @@ for item in os.listdir('/home/pylind'):
 		pypiResults.innerHTML = '<div class="pypi-loading">Searching</div>';
 
 		try {
-			// ---- 1. 索引缓存（挂在函数自身属性上，避免额外全局变量）----
 			if (!searchPyPI._indexPromise) {
 				searchPyPI._indexPromise = fetch('https://pypi.org/simple/')
 					.then(r => {
@@ -3566,13 +4508,12 @@ for item in os.listdir('/home/pylind'):
 						return names;
 					})
 					.catch(e => {
-						searchPyPI._indexPromise = null; // 失败允许重试
+						searchPyPI._indexPromise = null;
 						throw e;
 					});
 			}
 			const index = await searchPyPI._indexPromise;
 
-			// ---- 2. 内联模糊匹配 ----
 			const norm = s => s.toLowerCase().replace(/[-_.]+/g, '-');
 			const tokenize = s => norm(s).split('-').flatMap(p => p.split(/(?=[A-Z])/)).filter(
 				Boolean);
@@ -3675,7 +4616,7 @@ for item in os.listdir('/home/pylind'):
 			const scored = [];
 			for (const name of index) {
 				const n = norm(name);
-				if (n.length > qLen * 2 + 4 && !n.includes(norm(q))) continue; // 粗筛
+				if (n.length > qLen * 2 + 4 && !n.includes(norm(q))) continue;
 				const s = weightedRatio(q, name);
 				if (s > 55) scored.push({
 					name,
@@ -3690,7 +4631,6 @@ for item in os.listdir('/home/pylind'):
 				return;
 			}
 
-			// ---- 3. 并发取详情 ----
 			const details = await Promise.all(
 				matched.map(async (name) => {
 					try {
@@ -3716,8 +4656,6 @@ for item in os.listdir('/home/pylind'):
 			pypiResults.innerHTML = `<div class="pypi-error">Search error: ${error.message}</div>`;
 		}
 	}
-
-
 
 	function displaySearchResults(list) {
 		const items = list.map(data => {
@@ -3887,14 +4825,18 @@ for item in os.listdir('/home/pylind'):
 	}
 
 	// ============================================================
-	// AI 侧边栏功能
+	// AI 侧边栏
 	// ============================================================
 
 	function toggleAiSidebar() {
 		isAiSidebarOpen = !isAiSidebarOpen;
 		aiSidebar.classList.toggle('open', isAiSidebarOpen);
+
 		if (isAiSidebarOpen) {
 			setTimeout(() => aiInput.focus(), 100);
+
+			// ★ 首次打开且没有消息时渲染历史
+			loadAndRenderHistory();
 		}
 	}
 
@@ -3949,9 +4891,9 @@ for item in os.listdir('/home/pylind'):
 	> 一个用 Python 操作界面元素的布局库。支持创建元素、绑定事件、表单、列表、异步更新等能力。
 	
 	---
-	
+
 	## 目录
-	
+
 	- [简介](#简介)
 	- [快速开始](#快速开始)
 	- [基础元素](#基础元素)
@@ -3962,108 +4904,108 @@ for item in os.listdir('/home/pylind'):
 	- [异步支持](#异步支持)
 	- [全局工具函数](#全局工具函数)
 	- [完整示例](#完整示例)
-	
+
 	---
-	
+
 	## 简介
-	
+
 	\`layout\` 是一个纯 Python 调用的布局模块，让你用 Python 代码创建和操作界面元素：
-	
+
 	- 创建各种元素（文本、按钮、输入框、图片、链接等）
 	- 绑定事件与 Python 回调函数
 	- 表单字段管理与校验
 	- 动态列表增删
 	- 与 \`asyncio\` 协作实现异步更新
-	
+
 	所有元素默认挂载到预先指定的渲染区域，Python 端无需关心底层细节。
-	
+
 	---
-	
+
 	## 快速开始
-	
+
 	\`\`\`python
 	from layout import div, button
-	
+
 	# 创建元素（自动挂载到渲染区域）
 	div("title", "title", "Hello Layout")
-	
+
 	# 绑定事件
 	def on_click(event):
 	    print("clicked!")
-	
+
 	button("btn", "", "点我").on("click", callback(on_click))
-	
+
 	# 保持程序运行（等待事件循环）
 	loop()
 	\`\`\`
-	
+
 	---
-	
+
 	## 基础元素
-	
+
 	所有创建函数签名形如 \`func(id, classes, ...)\`，均返回对应元素对象。
-	
+
 	### span
-	
+
 	\`\`\`python
 	span(id, classes, content)
 	\`\`\`
-	
+
 	### div
-	
+
 	\`\`\`python
 	div(id, classes, content)
 	\`\`\`
-	
+
 	### button
-	
+
 	\`\`\`python
 	button(id, classes, content)
 	\`\`\`
-	
+
 	额外方法：
-	
+
 	| 方法 | 说明 |
 	|------|------|
 	| \`disable()\` | 禁用按钮 |
 	| \`enable()\` | 启用按钮 |
-	
+
 	### input
-	
+
 	\`\`\`python
 	input(id, classes, type='text', placeholder='')
 	\`\`\`
-	
+
 	属性：
-	
+
 	| 属性 | 说明 |
 	|------|------|
 	| \`value\` | 输入值 |
 	| \`placeholder\` | 占位符 |
 	| \`type\` | 输入类型 |
-	
+
 	方法：\`focus()\`、\`blur()\`
-	
+
 	### textarea
-	
+
 	\`\`\`python
 	textarea(id, classes, placeholder='', rows=4, cols=50)
 	\`\`\`
-	
+
 	属性：\`value\`、\`placeholder\`、\`rows\`、\`cols\`
-	
+
 	方法：\`focus()\`、\`blur()\`
-	
+
 	### img
-	
+
 	\`\`\`python
 	img(id, classes, src='', alt='')
 	\`\`\`
-	
+
 	属性：\`src\`、\`alt\`、\`width\`、\`height\`、\`title\`、\`naturalWidth\`、\`naturalHeight\`、\`complete\`
-	
+
 	方法：
-	
+
 	| 方法 | 说明 |
 	|------|------|
 	| \`setSrc(src)\` | 设置图片地址 |
@@ -4074,17 +5016,17 @@ for item in os.listdir('/home/pylind'):
 	| \`onError(fn)\` | 加载失败回调 |
 	| \`getNaturalSize()\` | 获取原始尺寸 |
 	| \`getInfo()\` | 获取图片信息（返回 dict） |
-	
+
 	### a（链接）
-	
+
 	\`\`\`python
 	a(id, classes, content='', href='#', target='_self')
 	\`\`\`
-	
+
 	属性：\`href\`、\`target\`、\`download\`、\`rel\`
-	
+
 	方法：
-	
+
 	| 方法 | 说明 |
 	|------|------|
 	| \`open()\` | 打开链接 |
@@ -4092,41 +5034,41 @@ for item in os.listdir('/home/pylind'):
 	| \`setTarget(target)\` | 设置打开方式 |
 	| \`setDownload(filename)\` | 设置下载文件名 |
 	| \`getInfo()\` | 获取链接信息（返回 dict） |
-	
+
 	---
-	
+
 	## 列表元素
-	
+
 	### ul
-	
+
 	\`\`\`python
 	ul(id, classes, items=[])
 	\`\`\`
-	
+
 	### ol
-	
+
 	\`\`\`python
 	ol(id, classes, items=[])
 	\`\`\`
-	
+
 	\`ol\` 额外方法：
-	
+
 	| 方法 | 说明 |
 	|------|------|
 	| \`setType(type)\` | 编号类型（\`1\` / \`A\` / \`a\` / \`I\` / \`i\`） |
 	| \`setStart(start)\` | 起始编号 |
 	| \`setReversed(flag)\` | 反转顺序 |
-	
+
 	### li
-	
+
 	\`\`\`python
 	li(content='', id='', classes='')
 	\`\`\`
-	
+
 	> 单独创建的 \`li\` **不会自动挂载**，需要通过 \`list.addItem(li)\` 添加。
-	
+
 	### 列表通用方法
-	
+
 	| 方法 | 说明 |
 	|------|------|
 	| \`addItem(content)\` | 添加一项（string 或 \`li\`） |
@@ -4139,31 +5081,31 @@ for item in os.listdir('/home/pylind'):
 	| \`getItemObjects()\` | 返回所有项对象（list） |
 	| \`getInfo()\` | 返回列表信息（dict） |
 	| \`toPythonList()\` | 转换为 Python list |
-	
+
 	属性：\`count\`、\`length\`（项数）
-	
+
 	---
-	
+
 	## 表单
-	
+
 	### 创建表单
-	
+
 	\`\`\`python
 	from layout import form, input, button
-	
+
 	f = form("my-form", "form-class")
-	
+
 	name = input("name", "", "text", "姓名")
 	name.attrs.set("required", "")
-	
+
 	age = input("age", "", "number", "年龄")
-	
+
 	f.form.addField("name", name)
 	f.form.addField("age", age)
 	\`\`\`
-	
+
 	### 表单方法
-	
+
 	| 方法 / 属性 | 说明 |
 	|-------------|------|
 	| \`f.form.addField(name, element)\` | 注册字段 |
@@ -4175,9 +5117,9 @@ for item in os.listdir('/home/pylind'):
 	| \`f.form.clear()\` | 清空字段与内容 |
 	| \`f.data\` | 快捷访问数据 |
 	| \`f.onSubmit(fn)\` | 绑定提交回调 |
-	
+
 	### 提交示例
-	
+
 	\`\`\`python
 	def on_submit(event):
 	    result = f.form.validate()
@@ -4185,25 +5127,25 @@ for item in os.listdir('/home/pylind'):
 	        print("校验失败：", result["errors"])
 	        return
 	    print("提交数据：", f.data)
-	
+
 	f.onSubmit(callback(on_submit))
 	\`\`\`
-	
+
 	---
-	
+
 	## 元素通用 API
-	
+
 	所有元素对象都具备以下能力。
-	
+
 	### 内容 content
-	
+
 	\`\`\`python
 	el.content = "新的文本"
 	print(el.content)
 	\`\`\`
-	
+
 	### 属性 attrs
-	
+
 	\`\`\`python
 	el.attrs.set("data-id", "123")
 	el.attrs.get("data-id")
@@ -4212,17 +5154,17 @@ for item in os.listdir('/home/pylind'):
 	el.attrs.batch({"title": "提示", "lang": "zh"})
 	el.attrs.getAll()       # 返回 dict
 	\`\`\`
-	
+
 	也支持快捷写法：
-	
+
 	\`\`\`python
 	el.setAttr("title", "提示")
 	el.getAttr("title")
 	el.setAttrs({"a": "1", "b": "2"})
 	\`\`\`
-	
+
 	### 样式 css
-	
+
 	\`\`\`python
 	el.css.set("color", "red")
 	el.css.get("color")
@@ -4230,9 +5172,9 @@ for item in os.listdir('/home/pylind'):
 	el.css.setAll("color: red; font-size: 14px;")
 	el.css.getAll()
 	\`\`\`
-	
+
 	### 类名 classes
-	
+
 	\`\`\`python
 	el.classes.add("active")
 	el.classes.remove("active")
@@ -4240,9 +5182,9 @@ for item in os.listdir('/home/pylind'):
 	el.classes.contains("active")
 	el.classes.list()
 	\`\`\`
-	
+
 	### 子元素 children
-	
+
 	\`\`\`python
 	parent.children.add(child)      # 添加子元素
 	parent.children.remove(child)   # 移除子元素
@@ -4250,82 +5192,82 @@ for item in os.listdir('/home/pylind'):
 	parent.children.list            # 获取子元素列表
 	parent.children.length          # 数量
 	\`\`\`
-	
+
 	### 事件 on / off
-	
+
 	\`\`\`python
 	el.on("click", callback(handler))
 	el.off("click", handler)
 	\`\`\`
-	
+
 	常用事件名：\`click\`、\`input\`、\`change\`、\`submit\`、\`mouseover\`、\`mouseout\`、\`focus\`、\`blur\` 等。
-	
+
 	### 显示 / 隐藏
-	
+
 	\`\`\`python
 	el.show()
 	el.hide()
 	\`\`\`
-	
+
 	### 移除 remove
-	
+
 	\`\`\`python
 	el.remove()
 	\`\`\`
-	
+
 	### 其他
-	
+
 	| 属性 / 方法 | 说明 |
 	|-------------|------|
 	| \`el.id\` | 元素 ID |
 	| \`el.html\` | innerHTML |
 	| \`el.parent\` | 父元素对象 |
 	| \`el.getPosition()\` | 获取位置信息（返回 dict） |
-	
+
 	---
-	
+
 	## 回调机制
-	
+
 	Python 函数要作为事件回调时，**必须**用 \`callback()\` 包装(callback不用导入)：
-	
+
 	\`\`\`python
 	def on_click(event):
 	    print("clicked")
-	
+
 	button("b", "", "点击").on("click", callback(on_click))
 	\`\`\`
-	
+
 	回调函数的第一个参数为事件对象（一般是 \`None\`，可在需要时读取）。
-	
+
 	---
-	
+
 	## 异步支持
-	
+
 	模块内置了 \`asyncio\` 事件循环入口，可直接启动后台任务：
-	
+
 	\`\`\`python
 	import asyncio
-	
+
 	async def ticker():
 	    import datetime
 	    while True:
 	        now = datetime.datetime.now().strftime("%H:%M:%S")
 	        clock.content = f"当前时间：{now}"
 	        await asyncio.sleep(1)
-	
+
 	asyncio.ensure_future(ticker())
 	\`\`\`
-	
+
 	启动后台任务后，需要调用 \`loop()\` 保持程序运行(不用导入)：
-	
+
 	\`\`\`python
 	loop()
 	\`\`\`
-	
+
 	---
-	
+
 	## 全局工具函数
-	
+
 	| 函数 | 说明 |
 	|------|------|
 	| \`css(cssText)\` | 注入全局样式 |
@@ -4333,12 +5275,12 @@ for item in os.listdir('/home/pylind'):
 	| \`createMany(elements)\` | 批量创建元素（传入 dict 列表） |
 	| \`getPosition(element)\` | 获取元素位置（返回 dict） |
 	| \`scrollTo(element, behavior='smooth')\` | 滚动到元素 |
-	
+
 	### createMany 示例
-	
+
 	\`\`\`python
 	from layout import createMany
-	
+
 	items = [
 	    {"type": "div", "id": "a", "classes": "card", "content": "卡片 A"},
 	    {"type": "button", "id": "b", "classes": "", "content": "按钮"},
@@ -4346,17 +5288,17 @@ for item in os.listdir('/home/pylind'):
 	]
 	createMany(items)
 	\`\`\`
-	
+
 	---
-	
+
 	## 完整示例
-	
+
 	\`\`\`python
 	from layout import (
 	    div, span, button, input, textarea, form,
 	    img, a, ul, ol, li, css
 	)
-	
+
 	# ============================================================
 	# 1. 注入全局 CSS
 	# ============================================================
@@ -4388,126 +5330,112 @@ for item in os.listdir('/home/pylind'):
 	    font-size: 13px;
 	}
 	""")
-	
-	
+
 	# ============================================================
 	# 2. 基础元素 + 事件回调
 	# ============================================================
 	card1 = div("card-1", "card", "")
-	
+
 	title = div("", "title", "1. 基础元素与事件")
 	card1.children.add(title)
-	
+
 	count = {"value": 0}
-	
+
 	counter_label = span("counter-label", "muted", "当前计数：0")
 	card1.children.add(counter_label)
-	
-	
+
 	def on_click(event):
 	    count["value"] += 1
 	    counter_label.content = f"当前计数：{count['value']}"
-	
-	
+
 	btn = button("btn-1", "btn", "点我 +1")
 	btn.on("click", callback(on_click))
 	card1.children.add(btn)
-	
-	
+
 	# ============================================================
 	# 3. 表单 + 校验 + 数据读取
 	# ============================================================
 	card2 = div("card-2", "card", "")
 	card2.children.add(div("", "title", "2. 表单交互"))
-	
+
 	my_form = form("my-form", "")
-	
+
 	name_input = input("name", "", "text", "请输入姓名")
 	name_input.attrs.set("required", "")
-	
+
 	age_input = input("age", "", "number", "请输入年龄")
-	
+
 	intro_area = textarea("intro", "", "简单介绍一下自己", 3, 40)
-	
+
 	my_form.form.addField("name", name_input)
 	my_form.form.addField("age", age_input)
 	my_form.form.addField("intro", intro_area)
-	
+
 	card2.children.add(my_form)
-	
+
 	result_label = div("", "muted", "")
 	card2.children.add(result_label)
-	
-	
+
 	def on_submit(event):
 	    validation = my_form.form.validate()
 	    if not validation["isValid"]:
 	        result_label.content = f"❌ 校验失败：{validation['errors']}"
 	        result_label.css.set("color", "#e91e63")
 	        return
-	
+
 	    data = my_form.data
 	    result_label.content = (
 	        f"✅ 提交成功：姓名={data['name']}, "
 	        f"年龄={data['age']}, 简介={data['intro']}"
 	    )
 	    result_label.css.set("color", "#16a34a")
-	
-	
+
 	submit_btn = button("submit-1", "btn", "提交表单")
 	submit_btn.on("click", callback(on_submit))
 	card2.children.add(submit_btn)
-	
-	
+
 	def on_reset(event):
 	    my_form.form.reset()
 	    result_label.content = "已重置"
 	    result_label.css.set("color", "#888")
-	
-	
+
 	reset_btn = button("reset-1", "btn", "重置")
 	reset_btn.css.set("background", "#888")
 	reset_btn.css.set("margin-left", "8px")
 	reset_btn.on("click", callback(on_reset))
 	card2.children.add(reset_btn)
-	
-	
+
 	# ============================================================
 	# 4. 列表（ul / ol）
 	# ============================================================
 	card3 = div("card-3", "card", "")
 	card3.children.add(div("", "title", "3. 列表"))
-	
+
 	fruits = ul("fruit-list", "", ["苹果", "香蕉", "橙子"])
 	card3.children.add(fruits)
-	
-	
+
 	def add_fruit(event):
 	    fruits.addItem(f"水果 {fruits.count + 1}")
-	
-	
+
 	add_btn = button("add-fruit", "btn", "添加一项")
 	add_btn.on("click", callback(add_fruit))
 	card3.children.add(add_btn)
-	
-	
+
 	def remove_fruit(event):
 	    fruits.removeItem(fruits.count - 1)
-	
-	
+
 	remove_btn = button("remove-fruit", "btn", "删除最后一项")
 	remove_btn.css.set("background", "#ef4444")
 	remove_btn.css.set("margin-left", "8px")
 	remove_btn.on("click", callback(remove_fruit))
 	card3.children.add(remove_btn)
-	
-	
+
 	# ============================================================
 	# 5. 图片 + 链接
 	# ============================================================
 	card4 = div("card-4", "card", "")
 	card4.children.add(div("", "title", "4. 图片与链接"))
-	
+
 	logo = img(
 	    "logo",
 	    "",
@@ -4516,81 +5444,56 @@ for item in os.listdir('/home/pylind'):
 	)
 	logo.css.set("width", "120px")
 	card4.children.add(logo)
-	
+
 	link = a("python-link", "muted", "访问 Python 官网 →",
 	         "https://www.python.org", "_blank")
 	link.css.set("display", "block")
 	link.css.set("margin-top", "8px")
 	card4.children.add(link)
-	
-	
+
 	# ============================================================
 	# 6. 动态更新（异步）
 	# ============================================================
 	import asyncio
-	
+
 	card5 = div("card-5", "card", "")
 	card5.children.add(div("", "title", "5. 异步更新"))
-	
+
 	clock_label = div("clock", "muted", "加载中...")
 	card5.children.add(clock_label)
-	
-	
+
 	async def start_clock():
 	    import datetime
 	    while True:
 	        now = datetime.datetime.now().strftime("%H:%M:%S")
 	        clock_label.content = f"当前时间：{now}"
 	        await asyncio.sleep(1)
-	
-	
+
 	asyncio.ensure_future(start_clock())
-	
+
 	loop()
-	
+
 	print("✅ 示例页面已渲染完成")
 	\`\`\`
-	
+
 	---
-	
+
 	## 注意事项
-	
+
 	1. **默认挂载**：所有创建函数默认挂载到渲染区域。若要挂到指定父元素，使用 \`parent.children.add(child)\`。
 	2. **回调包装**：绑定 Python 函数时，必须通过 \`callback(fn)\` 包装。
 	3. **列表项**：\`li()\` 创建的项不会自动挂载，需通过 \`list.addItem(li)\` 添加到列表。
 	4. **表单字段**：只有通过 \`form.form.addField(name, element)\` 注册的字段，才能被 \`validate()\` 和 \`data\` 识别。
 	5. **异步任务**：使用 \`asyncio.ensure_future(...)\` 启动后台任务后，脚本末尾需调用 \`loop()\` 保持程序运行。
-	6. **属性值类型**：所有属性值最终会转为字符串；数值型可直接传入。
+	6. **属性值类型**：所有属性值最终会转换为字符串；数值型可直接传入。
 	`;
-
-	function saveImageToGallery(url) {
-		if (url.indexOf('http') === 0) {
-			const dtask = plus.downloader.createDownload(url, {}, function(d, status) {
-				if (status == 200) {
-					plus.gallery.save(d.filename, function() {
-						plus.nativeUI.toast('Saved the album');
-					});
-				} else {
-					plus.nativeUI.toast('Save failed');
-				}
-			});
-			dtask.start();
-		} else {
-			const absolutePath = plus.io.convertLocalFileSystemURL(url);
-			plus.gallery.save(absolutePath, function() {
-				plus.nativeUI.toast('Saved the album');
-			}, function() {
-				plus.nativeUI.toast('Save failed');
-			});
-		}
-	}
 
 	// ============================================================
 	// 事件绑定
 	// ============================================================
-	newFileBtn.addEventListener('click', newProjectHandler);
+	newProjectBtn.addEventListener('click', newProjectHandler);
 
-	importFileBtn.addEventListener('click', importProjectHandler);
+	importProjectBtn.addEventListener('click', importProjectHandler);
 
 	Array.from(backBtns).forEach((b) => {
 		b.addEventListener('click', goBack);
@@ -4629,6 +5532,46 @@ for item in os.listdir('/home/pylind'):
 	});
 
 	closeAiSidebar.addEventListener('click', toggleAiSidebar);
+
+	// ============================================================
+	// 清空 AI 历史
+	// ============================================================
+	const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+	if (clearHistoryBtn) {
+		clearHistoryBtn.addEventListener('click', async () => {
+			// 1. 二次确认
+			const confirmed = await new Promise((resolve) => {
+				plus.nativeUI.confirm(
+					'Clear all AI operation logs? This action is irreversible.',
+					(e) => resolve(e.index === 0), {
+						title: 'Clear History',
+						buttons: ['Clear', 'Cancel'],
+					}
+				);
+			});
+			if (!confirmed) return;
+
+			const token = getStoredToken();
+			if (!token) {
+				plus.nativeUI.toast('Please sign in first');
+				return;
+			}
+
+			try {
+				// 2. 调服务端 + 本地清空
+				await aiClient.clearHistory(token);
+
+				// 3. 清空对话框 DOM
+				aiMessages.innerHTML = '';
+
+				plus.nativeUI.toast('History cleared');
+			} catch (e) {
+				console.warn('[AI] clear history failed:', e);
+				plus.nativeUI.toast('Clear failed: ' + e.message);
+			}
+		});
+	}
 
 	aiSendBtn.addEventListener('click', () => {
 		sendAiMessage(aiInput.value);
@@ -4680,8 +5623,16 @@ for item in os.listdir('/home/pylind'):
 			})
 	});
 
-	aboutBtn.addEventListener('click', () => {
-		togglePage('about');
+	userBtn.addEventListener('click', () => {
+		if (getStoredUser()) {
+			openProfileView();
+		} else {
+			openAuthView();
+		}
+	});
+
+	settingsBtn.addEventListener('click', () => {
+		togglePage('settings');
 	});
 	pypiBtn.addEventListener('click', showPypiView);
 	searchPackageBtn.addEventListener('click', () => {
@@ -4704,43 +5655,24 @@ for item in os.listdir('/home/pylind'):
 		}, 'slide-in-top');
 	});
 
-	// ========== 预加载（放在 plusready 里，应用启动时执行一次）==========
-	let chatMaskWv = null;
+	// ========== 预加载 chat ==========
 	let chatWv = null;
 
 	function preloadChat() {
-		// 父窗口：遮罩层
-		chatMaskWv = plus.webview.create('overlay.html', 'chatMask', {
-			top: '0px',
-			left: '0px',
-			width: '100%',
-			height: '100%',
-			opacity: 0.5,
-			zindex: 999,
-		});
-
-		// 子窗口：内容
 		chatWv = plus.webview.create('https://pylind.pages.dev/chat', 'Chat', {
 			disablePlus: true,
 			margin: 'auto',
 			width: '80%',
 			height: '80%',
-			background: 'transparent',
+			background: 'rgba(0,0,0,0.5)',
 			zindex: 1000,
+			popGesture: 'hide'
 		});
-
-		// 点遮罩 -> 隐藏
-		chatMaskWv.addEventListener('touchstart', function() {
-			chatMaskWv.hide('fade-out', 200);
-			chatWv.hide('fade-out', 200);
-		}, false);
 	}
 
 	preloadChat();
 
-	// ========== 点击按钮：直接显示 ==========
 	chatwayBtn.addEventListener('click', () => {
-		chatMaskWv.show('fade-in', 200);
 		chatWv.show('fade-in', 200);
 	});
 
@@ -4748,19 +5680,53 @@ for item in os.listdir('/home/pylind'):
 		clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
 		env: 'sandbox',
 		trigger: '#donate-btn',
-		amount: 5, // 默认金额，可省（默认 5）
-		donatePresets: [1, 2, 5, 10], // 预设按钮，可省（默认就是这个）
+		amount: 5,
+		donatePresets: [1, 2, 5, 10],
 		onSuccess: (data) => {
-			// data.amount / data.currency / data.mode === 'donate'
 			alert('Thank you! You paid ' + data.amount + ' ' + data.currency);
 		},
 		onCancel: () => {},
 		onError: (err) => alert(err.message),
 	});
 
-	purchase({
+	const CREDIT_API = 'https://pylind.pages.dev/api/credit';
+
+	async function addCredit(delta) {
+		const user = getCurrentUser();
+		if (!user) {
+			console.warn('[Credit] no user');
+			return false;
+		}
+
+		try {
+			const res = await fetch(CREDIT_API, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': 'Bearer ' + AUTH_API_TOKEN,
+				},
+				body: JSON.stringify({
+					email: user.email,
+					delta: Number(delta) || 0
+				}),
+			});
+			const data = await res.json();
+			if (data.success) {
+				setBalanceDisplay(data.credit);
+				console.log('[Credit] +' + delta + ' => ' + data.credit);
+				return true;
+			}
+			console.warn('[Credit] add failed:', data.error);
+			return false;
+		} catch (e) {
+			console.warn('[Credit] add error:', e);
+			return false;
+		}
+	}
+
+	const purchaseHandle = purchase({
 		clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
-		env: 'sandbox', // 'sandbox' 或 'live'
+		env: 'sandbox',
 		currency: 'USD',
 		amount: 1.00,
 		basePrice: {
@@ -4771,28 +5737,48 @@ for item in os.listdir('/home/pylind'):
 			CHF: 0.8,
 			JPY: 150
 		},
-		baseTimes: 100,
-		trigger: '.payai-btn', // 自动绑定触发按钮
+		baseTimes: 50,
+		title: 'Recharge Points',
 
-		// ✅ 成功回调：自定义逻辑，加次数放这里
-		onSuccess({
+		async onSuccess({
 			times,
 			amount,
 			currency,
+			credit,
 			result
 		}) {
-			aiCredits += times;
-			saveAiCredits();
-			alert(`You got ${times.toLocaleString()} times!`);
+			console.log('[Purchase] success', {
+				times,
+				amount,
+				currency,
+				credit
+			});
+
+			// 后端已经加过积分，直接用返回的 credit 更新显示；没有就重新拉
+			if (typeof credit === 'number') {
+				setBalanceDisplay(credit);
+			} else {
+				await loadBalance();
+			}
+
+			plus.nativeUI.toast(`Recharged! +${times.toLocaleString()} points`);
 		},
 
 		onCancel() {
 			console.log('User cancelled');
 		},
+
 		onError(err) {
 			console.error('PayPal error:', err);
+			plus.nativeUI.toast('Payment failed: ' + (err.message || 'unknown'));
 		},
 	});
+
+	if (profileRechargeBtn) {
+		profileRechargeBtn.addEventListener('click', () => {
+			purchaseHandle.open();
+		});
+	}
 
 	window.installPackageHandler = (packageName) => {
 		if (packageName === 'matplotlib') {
@@ -4820,62 +5806,19 @@ for item in os.listdir('/home/pylind'):
 		}
 	});
 
-	function parseSchemeUrl(url) {
-		var withoutScheme = url.replace(/^[a-z]+:\/\//, '');
-
-		var parts = withoutScheme.split('?');
-		var path = parts[0];
-		var queryString = parts[1] || '';
-
-		var params = {};
-		if (queryString) {
-			var pairs = queryString.split('&');
-			for (var i = 0; i < pairs.length; i++) {
-				var pair = pairs[i].split('=');
-				params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
-			}
-		}
-
-		return {
-			path: path,
-			params: params
-		};
-	}F
-
 	plus.key.addEventListener('backbutton', () => {
-		if (activeActionSheet) {
-			closeCustomActionSheet();
-			return;
-		}
+		const islast = doGoBack();
 
-		if (fileDrawerOpen) {
-			closeFileDrawer();
-			return;
+		if (islast) {
+			plus.nativeUI.confirm('Are you sure want to quit?', (e) => {
+				if (e.index === 0) {
+					plus.runtime.quit();
+				}
+			}, {
+				title: 'Tip',
+				button: ['QUIT', 'BACK'],
+			});
 		}
-
-		if (consoleOverlay.classList.contains('visible')) {
-			closeConsole();
-			return;
-		}
-
-		if (plus.webview.all().length > 1) {
-			plus.webview.close(plus.webview.getTopWebview());
-			return;
-		}
-
-		if (currentView !== 'files') {
-			doGoBack();
-			return;
-		}
-
-		plus.nativeUI.confirm('Are you sure want to quit?', (e) => {
-			if (e.index === 0) {
-				plus.runtime.quit();
-			}
-		}, {
-			title: 'Tip',
-			button: ['Quit', 'Back']
-		});
 	});
 
 	// ============================================================
@@ -4906,7 +5849,7 @@ for item in os.listdir('/home/pylind'):
 			model: false,
 			loading: {
 				type: 'snow',
-				interval: 150,
+				interval: 150
 			}
 		});
 		await ensurePyodide();
@@ -4915,11 +5858,10 @@ for item in os.listdir('/home/pylind'):
 		plus.nativeUI.closeWaiting();
 	})();
 
-	loadAiCredits();
-	updateCreditDisplay();
+	loadBalance();
 
 	fetch('https://pylind.pages.dev/api/visits');
-});
+};
 
 document.addEventListener('plusready', function() {
 	if (document.readyState === 'complete') {
