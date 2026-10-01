@@ -22,7 +22,6 @@
 		<link rel="stylesheet" href="js/xterm/style.css" />
 		<link rel="stylesheet" href="css/main.css" />
 	</head>
-
 	<body>
 		<!-- 文件列表视图 -->
 		<div id="project-list-view">
@@ -37,19 +36,6 @@
 								stroke-linejoin="round" />
 							<path d="M4 24L24 34L44 24" stroke="currentColor" stroke-width="4" stroke-linecap="round"
 								stroke-linejoin="round" />
-						</svg>
-					</button>
-					<button id="import-project-btn" title="Upload Project">
-						<svg viewBox="0 0 48 48" fill="none">
-							<path
-								d="M24 43.9998H10C8.89543 43.9998 8 43.1043 8 41.9998V5.99976C8 4.89519 8.89543 3.99976 10 3.99976H38C39.1046 3.99976 40 4.89519 40 5.99976V23.9998"
-								stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-							<path d="M35.5 43.9998V30.9998" stroke="currentColor" stroke-width="4"
-								stroke-linecap="round" stroke-linejoin="round" />
-							<path d="M31 34.4998L32.5 32.9998L35.5 29.9998L38.5 32.9998L40 34.4998"
-								stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-							<path d="M16 15.9998H32" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-							<path d="M16 23.9998H24" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
 						</svg>
 					</button>
 					<button id="user-btn" title="Account">
@@ -220,19 +206,18 @@
 			</div>
 
 			<div class="profile-body">
-				<div class="profile-avatar" id="profile-avatar">W</div>
+				<div class="profile-avatar" id="profile-avatar"></div>
 				<div class="profile-name" id="profile-name"></div>
 				<div class="profile-email" id="profile-email"></div>
 
 				<div class="profile-balance" id="profile-balance">
 					<div class="balance-label">
-						<svg viewBox="0 0 48 48"
-							fill="none">
+						<svg viewBox="0 0 48 48" fill="none">
 							<path
 								d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
 								stroke="currentColor" stroke-width="4" />
-							<path d="M24.0002 4L41.3207 34H6.67969L24.0002 4Z" fill="none" stroke="v"
-								stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+							<path d="M24.0002 4L41.3207 34H6.67969L24.0002 4Z" fill="none" stroke="v" stroke-width="4"
+								stroke-linecap="round" stroke-linejoin="round" />
 							<path fill-rule="evenodd" clip-rule="evenodd"
 								d="M24 10C25.6569 10 27 8.65685 27 7C27 5.34315 25.6569 4 24 4C22.3431 4 21 5.34315 21 7C21 8.65685 22.3431 10 24 10Z"
 								fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"
@@ -256,7 +241,19 @@
 						</svg>
 					</div>
 					<div class="balance-num" id="profile-balance-num">0</div>
-					<button class="avatar-editor-btn ghost" id="profile-recharge-btn">Recharge</button>
+					<button class="balance-btn" id="profile-recharge-btn">
+						<svg viewBox="0 0 48 48" fill="none">
+							<path fill-rule="evenodd" clip-rule="evenodd"
+								d="M17.982 11.9689L31.7846 4L36.397 11.9889L17.982 11.9689Z" stroke="currentColor"
+								stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+							<path
+								d="M4 14C4 12.8954 4.89543 12 6 12H42C43.1046 12 44 12.8954 44 14V42C44 43.1046 43.1046 44 42 44H6C4.89543 44 4 43.1046 4 42V14Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							<path d="M35.25 33H44V23H35.25C32.3505 23 30 25.2386 30 28C30 30.7614 32.3505 33 35.25 33Z"
+								fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+							<path d="M44 16.5V40.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+						</svg>
+					</button>
 				</div>
 
 				<button class="auth-btn profile-logout" id="logoutBtn">Sign out</button>
@@ -328,6 +325,24 @@
 					</svg>
 					<span>Donate</span>
 				</div>
+				<div id="toggle-theme-btn" class="settings-list-btn" title="Toggle Theme">
+					<svg viewBox="0 0 48 48" fill="none">
+						<path fill-rule="evenodd" clip-rule="evenodd"
+							d="M24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44V4Z" stroke="currentColor"
+							stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M24 4C35.0457 4 44 12.9543 44 24C44 35.0457 35.0457 44 24 44V4Z" fill="none"
+							stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+						<path d="M24 36H9" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M24 28H5" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M24 20H5" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+						<path d="M24 12H9" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+							stroke-linejoin="round" />
+					</svg>
+					<span>System</span>
+				</div>
 				<div class='contact'>
 					<div>Contact Us</div>
 					<div class="btn-group">
@@ -391,7 +406,7 @@
 								stroke-linecap="round" stroke-linejoin="round" />
 						</svg>
 					</button>
-					<div class="title"><span>PyPI Package Manager</span></div>
+					<div class="title"><span>PyPI Packages</span></div>
 				</div>
 			</div>
 			<div class="pypi-search">
@@ -646,11 +661,16 @@
 								<div class="title"><span>AI Agent</span></div>
 								<div class="clear-btn" id="clear-history-btn" title="Clear history">
 									<svg viewBox="0 0 48 48" fill="none">
-										<path d="M9 10H39" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-										<path d="M13 10V40C13 41.1046 13.8954 42 15 42H33C34.1046 42 35 41.1046 35 40V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-										<path d="M19 10V6C19 4.89543 19.8954 4 21 4H27C28.1046 4 29 4.89543 29 6V10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-										<path d="M21 20V34" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-										<path d="M27 20V34" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+										<path d="M9 10V44H39V10H9Z" fill="none" stroke="currentColor" stroke-width="4"
+											stroke-linejoin="round" />
+										<path d="M20 20V33" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M28 20V33" stroke="currentColor" stroke-width="4"
+											stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M4 10H44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+											stroke-linejoin="round" />
+										<path d="M16 10L19.289 4H28.7771L32 10H16Z" fill="none" stroke="currentColor"
+											stroke-width="4" stroke-linejoin="round" />
 									</svg>
 								</div>
 								<div class="close-btn" id="close-ai-sidebar">

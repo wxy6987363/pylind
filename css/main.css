@@ -15,7 +15,7 @@ body {
 	color: var(--text-primary);
 }
 
-/* ========== 浅色模式 ========== */
+
 :root {
 	--bg-primary: #f0f7f0;
 	--bg-secondary: #ffffff;
@@ -46,95 +46,22 @@ body {
 	--shadow-sm: 0 2px 8px rgba(46, 125, 50, 0.12);
 	--shadow-md: 0 4px 16px rgba(46, 125, 50, 0.18);
 	--shadow-lg: 0 8px 24px rgba(46, 125, 50, 0.22);
+	--ai-sidebar-bg: #ffffff;
+	--ai-sidebar-header-bg: #ffffff;
+	--ai-sidebar-input-bg: #ffffff;
+	--ai-sidebar-presets-bg: #ffffff;
+	--shadow-sm: 0 2px 8px rgba(46, 125, 50, 0.12);
+	--shadow-md: 0 4px 16px rgba(46, 125, 50, 0.18);
+	--shadow-lg: 0 8px 24px rgba(46, 125, 50, 0.22);
 	--radius-sm: 4px;
 	--radius-md: 6px;
 	--radius-lg: 8px;
 	--radius-xl: 12px;
 	--radius-full: 20px;
-	--ai-sidebar-bg: #ffffff;
-	--ai-sidebar-header-bg: #ffffff;
-	--ai-sidebar-input-bg: #ffffff;
-	--ai-sidebar-presets-bg: #ffffff;
-}
-
-/* ========== 深色模式 ========== */
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg-primary: #121212;
-		--bg-secondary: #1e1e1e;
-		--bg-elevated: #2a2a2a;
-		--bg-hover: #333333;
-		--bg-active: #3d3d3d;
-		--border-color: #3a3a3a;
-		--text-primary: #e8e8e8;
-		--text-secondary: #c0c0c0;
-		--text-muted: #888888;
-		--accent: #0ebe7f;
-		--accent-hover: #0da06a;
-		--accent-active: #0c8a5a;
-		--accent-light: #2ecc71;
-		--shadow-color: rgba(14, 190, 127, 0.20);
-		--file-border: #0ebe7f;
-		--terminal-bg: #0d0d0d;
-		--topbar-bg: #1a1a1a;
-		--scrollbar-track: #1e1e1e;
-		--scrollbar-thumb: #3d3d3d;
-		--ai-user-msg: #0ebe7f;
-		--ai-assistant-bg: #2a2a2a;
-		--code-bg: #1a1a1a;
-		--danger: #ef5350;
-		--danger-active: #e53935;
-		--input-border: #3a3a3a;
-		--input-focus: #0ebe7f;
-		--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-		--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-		--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-		--ai-sidebar-bg: #000000;
-		--ai-sidebar-header-bg: #000000;
-		--ai-sidebar-input-bg: #000000;
-		--ai-sidebar-presets-bg: #000000;
-	}
-}
-
-/* ========== 强制浅色模式 ========== */
-[data-theme="light"] {
-	--bg-primary: #f0f7f0;
-	--bg-secondary: #ffffff;
-	--bg-elevated: #f8fbf8;
-	--bg-hover: #e8f0e8;
-	--bg-active: #d4e8d4;
-	--border-color: #b8d9b8;
-	--text-primary: #1e3a1e;
-	--text-secondary: #2d5a2d;
-	--text-muted: #4a7a4a;
-	--accent: #2e7d32;
-	--accent-hover: #1e5a22;
-	--accent-active: #16501a;
-	--accent-light: #4caf50;
-	--shadow-color: rgba(46, 125, 50, 0.15);
-	--file-border: #2e7d32;
-	--terminal-bg: #1a2a1a;
-	--topbar-bg: #e0f0e0;
-	--scrollbar-track: #e0efe0;
-	--scrollbar-thumb: #8fb88f;
-	--ai-user-msg: #2e7d32;
-	--ai-assistant-bg: #ffffff;
-	--code-bg: #eef5ee;
-	--danger: #c62828;
-	--danger-active: #b71c1c;
-	--input-border: #b8d9b8;
-	--input-focus: #2e7d32;
-	--shadow-sm: 0 2px 8px rgba(46, 125, 50, 0.12);
-	--shadow-md: 0 4px 16px rgba(46, 125, 50, 0.18);
-	--shadow-lg: 0 8px 24px rgba(46, 125, 50, 0.22);
-	--ai-sidebar-bg: #ffffff;
-	--ai-sidebar-header-bg: #ffffff;
-	--ai-sidebar-input-bg: #ffffff;
-	--ai-sidebar-presets-bg: #ffffff;
 }
 
 /* ========== 强制深色模式 ========== */
-[data-theme="dark"] {
+[data-theme="obsidian"] {
 	--bg-primary: #121212;
 	--bg-secondary: #1e1e1e;
 	--bg-elevated: #2a2a2a;
@@ -645,10 +572,7 @@ svg {
 /* ========== 终端覆盖层 ========== */
 #console-overlay {
 	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+	inset: 0;
 	display: none;
 	flex-direction: column;
 	background: var(--terminal-bg);
@@ -688,7 +612,8 @@ svg {
 	color: var(--danger-active);
 }
 
-#terminal-container, #layout-container {
+#terminal-container,
+#layout-container {
 	flex: 1;
 	overflow: auto;
 }
@@ -996,24 +921,18 @@ svg {
 }
 
 #ai-sidebar {
-	width: 0;
-	min-width: 0;
-	max-width: 0;
-	height: 100%;
+	inset: 0;
 	background: var(--ai-sidebar-bg);
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+	transition: transform 0.3s ease;
 	position: fixed;
-	top: 0;
-	right: 0;
+	transform: translateX(100%);
 }
 
 #ai-sidebar.open {
-	width: 380px;
-	min-width: 380px;
-	max-width: 380px;
+	transform: translateX(0);
 	z-index: 12;
 }
 
@@ -1372,12 +1291,12 @@ svg {
 .file-drawer {
 	position: fixed;
 	top: 0;
-	left: -70%;
+	transform: translateX(-100%);
 	width: 70%;
 	height: 100%;
 	background: var(--bg-secondary, #1e1e1e);
 	z-index: 9999;
-	transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	display: flex;
 	flex-direction: column;
 	box-shadow: 2px 0 16px rgba(0, 0, 0, 0.3);
@@ -1386,16 +1305,13 @@ svg {
 }
 
 .file-drawer.open {
-	left: 0;
+	transform: none;
 }
 
 /* 抽屉背景遮罩 */
 .drawer-overlay {
 	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+	inset: 0;
 	background: rgba(0, 0, 0, 0.4);
 	z-index: 9998;
 	opacity: 0;
@@ -1546,10 +1462,7 @@ svg {
 /* ========== 自定义长按操作菜单（锚点定位 · 简约弹性） ========== */
 .custom-action-overlay {
 	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
+	inset: 0;
 	background: transparent;
 	z-index: 10000;
 	pointer-events: auto;
@@ -1662,11 +1575,26 @@ svg {
 	margin-top: 0;
 }
 
-.ai-message h1 { font-size: 1.5em; }
-.ai-message h2 { font-size: 1.3em; }
-.ai-message h3 { font-size: 1.15em; }
-.ai-message h4 { font-size: 1.05em; }
-.ai-message h5 { font-size: 1em; }
+.ai-message h1 {
+	font-size: 1.5em;
+}
+
+.ai-message h2 {
+	font-size: 1.3em;
+}
+
+.ai-message h3 {
+	font-size: 1.15em;
+}
+
+.ai-message h4 {
+	font-size: 1.05em;
+}
+
+.ai-message h5 {
+	font-size: 1em;
+}
+
 .ai-message h6 {
 	font-size: 0.95em;
 	opacity: 0.85;
@@ -1722,12 +1650,12 @@ svg {
 	margin: 0.25em 0;
 }
 
-.ai-message li > p {
+.ai-message li>p {
 	margin: 0.25em 0;
 }
 
-.ai-message li > ul,
-.ai-message li > ol {
+.ai-message li>ul,
+.ai-message li>ol {
 	margin: 0.25em 0;
 }
 
@@ -1835,7 +1763,8 @@ svg {
 	padding: 0.55em 0.85em;
 	background: #ffffff;
 	border: none;
-	border-bottom: 1px solid #ececec; /* 只有这条灰色横线 */
+	border-bottom: 1px solid #ececec;
+	/* 只有这条灰色横线 */
 }
 
 /* 最后一行不要多余横线 */
@@ -1960,7 +1889,8 @@ svg {
    ============================================================ */
 
 .ai-toolcall {
-	display: none;               /* 没调用就不显示 */
+	display: none;
+	/* 没调用就不显示 */
 	align-items: center;
 	gap: 6px;
 	margin-bottom: 10px;
@@ -2235,6 +2165,7 @@ svg {
 /* ========== 用户信息视图 ========== */
 .profile-body {
 	flex: 1;
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -2319,8 +2250,10 @@ svg {
 	margin-bottom: 24px;
 	box-shadow: var(--shadow-lg);
 
-	overflow: hidden;              /* ← 让图片按圆形裁切 */
-	cursor: pointer;               /* ← 提示可点 */
+	overflow: hidden;
+	/* ← 让图片按圆形裁切 */
+	cursor: pointer;
+	/* ← 提示可点 */
 	user-select: none;
 }
 
@@ -2339,21 +2272,20 @@ svg {
 
 /* ========== 用户页余额卡片 ========== */
 .profile-balance {
-	margin-bottom: 28px;
-	padding: 16px 24px;
+	padding: 6px 8px;
 	background: var(--bg-secondary);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-lg);
+	border-radius: 9999px;
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	width: 100%;
-	max-width: 260px;
+	position: absolute;
+	right: 16px;
+	top: 10px;
+	color: var(--text-muted);
 }
 
 .profile-balance .balance-label {
-	font-size: 20px;
-	color: var(--text-muted);
+	font-size: 16px;
 	letter-spacing: 1.2px;
 	display: flex;
 	align-items: center;
@@ -2361,18 +2293,16 @@ svg {
 }
 
 .profile-balance .balance-num {
-	font-size: 20px;
+	font-size: 16px;
 	font-weight: 700;
-	color: var(--accent);
 	line-height: 1;
 	font-variant-numeric: tabular-nums;
 }
 
-.profile-balance .btn {
-	margin-top: 6px;
-	padding: 8px 22px;
-	font-size: 13px;
-	border-radius: var(--radius-md);
+.profile-balance .balance-btn {
+	font-size: 12px;
+	border: none;
+	background: transparent;
 }
 
 /* ============================================================
@@ -2392,8 +2322,13 @@ svg {
 }
 
 @keyframes avatarEditorFadeIn {
-	from { opacity: 0; }
-	to   { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
 }
 
 .avatar-editor-panel {
@@ -2407,8 +2342,13 @@ svg {
 }
 
 @keyframes avatarEditorPop {
-	from { transform: scale(.92); }
-	to   { transform: scale(1); }
+	from {
+		transform: scale(.92);
+	}
+
+	to {
+		transform: scale(1);
+	}
 }
 
 .avatar-editor-title {

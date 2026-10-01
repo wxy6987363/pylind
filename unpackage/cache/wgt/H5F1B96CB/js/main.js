@@ -341,7 +341,6 @@ const initApp = async function() {
 	// ----- DOM refs -----
 	const projectGrid = document.getElementById('project-grid');
 	const newProjectBtn = document.getElementById('new-project-btn');
-	const importProjectBtn = document.getElementById('import-project-btn');
 	const editView = document.getElementById('edit-view');
 	const editorTitle = document.getElementById('editor-title');
 	const backBtns = document.getElementsByClassName('back-btn');
@@ -352,6 +351,7 @@ const initApp = async function() {
 	const terminalContainer = document.getElementById('terminal-container');
 	const shareBtn = document.getElementById('share-btn');
 	const updateBtn = document.getElementById('update-btn');
+	const toggleThemeBtn = document.getElementById("toggle-theme-btn");
 	const emailBtn = document.getElementById('email-btn');
 	const QQBtn = document.getElementById('qq-btn');
 
@@ -1329,9 +1329,9 @@ const initApp = async function() {
 		}
 
 		try {
-			const res = await fetch(`${CREDIT_API}?email=${encodeURIComponent(user.email)}`, {
+			const res = await fetch(`https://pylind.pages.dev/api/account/credit`, {
 				headers: {
-					'Authorization': 'Bearer ' + AUTH_API_TOKEN
+					'Authorization': 'Bearer ' + getStoredToken()
 				}
 			});
 			const data = await res.json();
@@ -2295,12 +2295,21 @@ const initApp = async function() {
 		scrollback: 10000
 	});
 
-	isDarkMode.addEventListener('change', (e) => {
-		term.options.theme = e.matches ? darkTheme : lightGreenTheme;
+	function themeUpdateHandler(isDark) {
+		document.body.dataset.theme = isDark ? 'obsidian' : 'matcha';
+		term.options.theme = isDark ? darkTheme : lightGreenTheme;
 		editor.updateOptions({
-			'theme': e.matches ? 'vs-dark' : 'vs'
+			'theme': isDark ? 'vs-dark' : 'vs'
 		});
-	})
+	}
+
+	isDarkMode.addEventListener('change', (e) => {
+		if (themeIndex == 0) {
+			themeUpdateHandler(e.matches);
+		}
+	});
+
+	themeUpdateHandler(isDarkMode.matches);
 
 	const fitAddon = new FitAddon();
 	term.loadAddon(fitAddon);
@@ -2424,6 +2433,29 @@ const initApp = async function() {
 			console.error('获取服务失败：' + e.message);
 		});
 	}
+
+	const themes = ['system', 'matcha', 'obsidian'];
+	let themeIndex = 0;
+
+	let themeName = 'system';
+
+	function toggleTheme(index) {
+		themeIndex = index ?? ((themeIndex + 1) % themes.length);
+		themeName = themes[themeIndex].charAt(0).toUpperCase() + themes[themeIndex].slice(1);
+		plus.storage.setItem('theme', String(themeIndex));
+		toggleThemeBtn.querySelector('span').textContent = themeName;
+		if (themeIndex == 0) {
+			themeUpdateHandler(isDarkMode.matches);
+		} else if (themeIndex == 1) {
+			themeUpdateHandler(false);
+		} else if (themeIndex == 2) {
+			themeUpdateHandler(true);
+		}
+	}
+
+	toggleTheme(!isNaN(parseInt(plus.storage.getItem('theme'))) ?
+		parseInt(plus.storage.getItem('theme')) :
+		0);
 
 	async function checkUpdate() {
 		const res = await fetch('https://pylind.pages.dev/api/version');
@@ -3694,8 +3726,10 @@ const initApp = async function() {
 			if (e.index === 0 && e.value) {
 				const projectName = e.value.trim();
 				doCreateProject(projectName);
+			} else if (e.index === 1) {
+				importProject();
 			}
-		}, 'New Project', 'my_project', ['Create', 'Cancel']);
+		}, 'New Project', 'my_project', ['Create', 'Import', 'Cancel']);
 	}
 
 	async function doCreateProject(projectName) {
@@ -3711,7 +3745,7 @@ const initApp = async function() {
 		openProject(projectName);
 	}
 
-	function importProjectHandler() {
+	function importProject() {
 		plus.io.chooseFile({
 			title: 'Choose the project zip file',
 			filter: {
@@ -5493,8 +5527,6 @@ for item in os.listdir('/home/pylind'):
 	// ============================================================
 	newProjectBtn.addEventListener('click', newProjectHandler);
 
-	importProjectBtn.addEventListener('click', importProjectHandler);
-
 	Array.from(backBtns).forEach((b) => {
 		b.addEventListener('click', goBack);
 	});
@@ -5603,6 +5635,7 @@ for item in os.listdir('/home/pylind'):
 	closeConsoleBtn.addEventListener('click', closeConsole);
 	shareBtn.addEventListener('click', shareApp);
 	updateBtn.addEventListener('click', checkUpdate);
+	toggleThemeBtn.addEventListener('click', () => toggleTheme());
 
 	emailBtn.addEventListener('click', () => {
 		const msg = plus.messaging.createMessage(plus.messaging.TYPE_EMAIL);
@@ -5688,41 +5721,6 @@ for item in os.listdir('/home/pylind'):
 		onCancel: () => {},
 		onError: (err) => alert(err.message),
 	});
-
-	const CREDIT_API = 'https://pylind.pages.dev/api/credit';
-
-	async function addCredit(delta) {
-		const user = getCurrentUser();
-		if (!user) {
-			console.warn('[Credit] no user');
-			return false;
-		}
-
-		try {
-			const res = await fetch(CREDIT_API, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': 'Bearer ' + AUTH_API_TOKEN,
-				},
-				body: JSON.stringify({
-					email: user.email,
-					delta: Number(delta) || 0
-				}),
-			});
-			const data = await res.json();
-			if (data.success) {
-				setBalanceDisplay(data.credit);
-				console.log('[Credit] +' + delta + ' => ' + data.credit);
-				return true;
-			}
-			console.warn('[Credit] add failed:', data.error);
-			return false;
-		} catch (e) {
-			console.warn('[Credit] add error:', e);
-			return false;
-		}
-	}
 
 	const purchaseHandle = purchase({
 		clientId: 'AUv2dlFIWISPgUjb9sYB-Km8n7FU5EnC5fqS4lKx0AK2L47wuIGqbTaDyRUXPC1dwhF9p7_FPja-UwiH',
