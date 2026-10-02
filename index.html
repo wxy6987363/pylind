@@ -24,7 +24,7 @@
 	</head>
 	<body>
 		<!-- 文件列表视图 -->
-		<div id="project-list-view">
+		<div id="project-list-view" class="page">
 			<div class="header">
 				<h2>Projects</h2>
 				<div class="actions">
@@ -70,7 +70,7 @@
 		</div>
 
 		<!-- 登录/注册视图 -->
-		<div id="auth-view">
+		<div id="auth-view" class="page">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
@@ -190,7 +190,7 @@
 		</div>
 
 		<!-- 用户信息视图 -->
-		<div id="profile-view">
+		<div id="profile-view" class="page">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
@@ -241,28 +241,16 @@
 						</svg>
 					</div>
 					<div class="balance-num" id="profile-balance-num">0</div>
-					<button class="balance-btn" id="profile-recharge-btn">
-						<svg viewBox="0 0 48 48" fill="none">
-							<path fill-rule="evenodd" clip-rule="evenodd"
-								d="M17.982 11.9689L31.7846 4L36.397 11.9889L17.982 11.9689Z" stroke="currentColor"
-								stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-							<path
-								d="M4 14C4 12.8954 4.89543 12 6 12H42C43.1046 12 44 12.8954 44 14V42C44 43.1046 43.1046 44 42 44H6C4.89543 44 4 43.1046 4 42V14Z"
-								fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-							<path d="M35.25 33H44V23H35.25C32.3505 23 30 25.2386 30 28C30 30.7614 32.3505 33 35.25 33Z"
-								fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-							<path d="M44 16.5V40.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-						</svg>
-					</button>
 				</div>
-
-				<button class="auth-btn profile-logout" id="logoutBtn">Sign out</button>
-				<button class="auth-btn profile-delete" id="deleteAccountBtn">Delete account</button>
+				
+				<button class="profile-btn" id="devicesBtn">Devices</button>
+				<button class="profile-btn" id="logoutBtn">Sign out</button>
+				<button class="profile-btn delete" id="deleteAccountBtn">Delete account</button>
 			</div>
 		</div>
 
 		<!-- 关于视图 -->
-		<div id="settings-view">
+		<div id="settings-view" class="page">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
@@ -395,7 +383,7 @@
 		</div>
 
 		<!-- PyPI包管理视图 -->
-		<div id="pypi-view">
+		<div id="pypi-view" class="page">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">
@@ -445,7 +433,7 @@
 		</div>
 
 		<!-- 编辑器视图 -->
-		<div id="edit-view">
+		<div id="edit-view" class="page">
 			<div class="topbar">
 				<div class="topbar-row">
 					<button class="back-btn">

@@ -105,18 +105,50 @@ svg {
 	flex-shrink: 0;
 }
 
-/* ========== 文件列表视图 ========== */
-#project-list-view {
-	display: none;
+.page {
+	position: fixed;
+	display: flex;
 	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	background: var(--bg-primary);
-	padding: 40px 24px;
+	inset: 0;
+	background-color: var(--bg-primary);
+	will-change: transform;
+
+	/* 默认隐藏，但保留元素（不触发重排）*/
+	visibility: hidden;
+	transform: translateX(100%);
 }
 
-#project-list-view.active {
-	display: flex;
+/* 稳定激活态：停在中间 */
+.page.active {
+	visibility: visible;
+	transform: translateX(0);
+}
+
+/* 从右滑入 */
+.page.show {
+	visibility: visible;
+	animation: slideInRight 0.6s ease;
+}
+
+/* 往左滑出，结束后隐藏 */
+.page.hide {
+	visibility: visible;
+	animation: slideOutLeft 0.6s ease forwards;
+}
+
+@keyframes slideInRight {
+	from { transform: translateX(100%); }
+	to   { transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+	from { transform: translateX(0); }
+	to   { visibility: hidden; transform: translateX(-100%); }
+}
+
+/* ========== 文件列表视图 ========== */
+#project-list-view {
+	padding: 40px 24px;
 }
 
 #project-list-view .header {
@@ -258,15 +290,8 @@ svg {
 
 /* ========== 关于视图 ========== */
 #settings-view {
-	display: none;
 	flex-direction: column;
-	width: 100%;
-	height: 100%;
 	background: var(--bg-primary);
-}
-
-#settings-view.active {
-	display: flex;
 }
 
 .about-icon {
@@ -346,18 +371,6 @@ svg {
 }
 
 /* ========== 编辑器视图 ========== */
-#edit-view {
-	display: none;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	background: var(--bg-primary);
-}
-
-#edit-view.active {
-	display: flex;
-}
-
 /* ========== 顶栏 - 两行布局 ========== */
 .topbar {
 	display: flex;
@@ -624,16 +637,7 @@ svg {
 
 /* ========== PyPI 视图 ========== */
 #pypi-view {
-	display: none;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	background: var(--bg-primary);
 	overflow-y: auto;
-}
-
-#pypi-view.active {
-	display: flex;
 }
 
 .pypi-search {
@@ -1919,20 +1923,6 @@ svg {
 }
 
 /* ========== 认证视图 ========== */
-#auth-view,
-#profile-view {
-	display: none;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	background: var(--bg-primary);
-}
-
-#auth-view.active,
-#profile-view.active {
-	display: flex;
-}
-
 .auth-body {
 	padding: 24px 28px 40px 28px;
 	overflow-y: auto;
@@ -2204,14 +2194,22 @@ svg {
 	word-break: break-all;
 }
 
-.profile-logout {
+.profile-btn {
+	padding: 14px;
+	border-radius: var(--radius-lg);
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-top: 4px;
+	transition: background 0.15s, transform 0.1s;
 	background: transparent;
-	color: var(--danger);
-	border: 1.5px solid var(--danger);
+	color: var(--text-muted);
+	border: 1.5px solid var(--border-color);
+	width: 70%;
 	max-width: 220px;
 }
 
-.profile-logout:active {
+.profile-btn:active {
 	background: var(--bg-active);
 	transform: scale(0.985);
 }
@@ -2220,18 +2218,15 @@ svg {
 	display: none !important;
 }
 
-.profile-delete {
+.profile-btn.delete {
 	background: transparent;
-	color: var(--text-muted);
-	border: 1.5px solid var(--border-color);
+	color: var(--danger);
+	border: 1.5px solid var(--danger);
 	max-width: 220px;
 	margin-top: 10px;
 }
 
-.profile-delete:active {
-	background: var(--bg-active);
-	color: var(--danger);
-	border-color: var(--danger);
+.profile-btn.delete:active {
 	transform: scale(0.985);
 }
 
